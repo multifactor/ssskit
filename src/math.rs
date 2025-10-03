@@ -30,6 +30,66 @@ pub fn interpolate(shares: &[Share]) -> Vec<u8> {
         .collect()
 }
 
+/// Takes N sample points and returns the value at a given x using Lagrange interpolation over GF(256).
+pub fn interpolate_polynomial(x_samples: &[GF256], y_samples: &[GF256], x: GF256) -> GF256 {
+    assert!(
+        x_samples.len() == y_samples.len(),
+        "sample length mistmatch"
+    );
+
+    let limit = x_samples.len();
+    let mut result = GF256(0);
+
+    for i in 0..limit {
+        let mut basis = GF256(1);
+
+        for j in 0..limit {
+            if i == j {
+                continue;
+            }
+
+            let num = x.clone() + x_samples[j].clone();
+            let denom = x_samples[i].clone() + x_samples[j].clone();
+            let term = num / denom;
+            basis = basis * term;
+        }
+
+        result = result + (y_samples[i].clone() * basis);
+    }
+
+    result
+}
+
+pub fn reshare(shares: &[Share], index: usize) -> Share {
+    // assert that atleast 2 shares exist
+    assert!(
+        shares.len() >= 2 && shares.len() <= 255,
+        "atleast 2 shares and atmost 255 shares are required"
+    );
+
+    let secret_length = shares[0].y.len();
+
+    let mut new_secret = Vec::new();
+    for i in 0..secret_length {
+        let mut x_values = Vec::new();
+        let mut y_values = Vec::new();
+        for share in shares {
+            x_values.push(share.x.clone());
+            y_values.push(share.y[i].clone());
+        }
+        new_secret.push(interpolate_polynomial(
+            &x_values,
+            &y_values,
+            GF256(index as u8),
+        ));
+    }
+
+    Share {
+        x: GF256(index as u8),
+        y: new_secret,
+    }
+}
+
 // Generates `k` polynomial coefficients, being the last one `s` and the others randomly generated between `[1, 255]`.
 // Coefficient degrees go from higher to lower in the returned vector order.
 pub fn random_polynomial<R: rand::Rng>(s: GF256, k: u8, rng: &mut R) -> Vec<GF256> {

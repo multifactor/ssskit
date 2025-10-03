@@ -166,6 +166,76 @@ impl Sharks {
             Ok(math::interpolate(values.as_slice()))
         }
     }
+
+    /// Given an iterable collection of shares, recovers the original secret.
+    /// If the number of distinct shares is less than the minimum threshold an `Err` is returned,
+    /// otherwise an `Ok` containing the desired number of shares.
+    ///
+    /// Example:
+    /// ```
+    /// # use sharks::{ Sharks, Share };
+    /// # use rand_chacha::rand_core::SeedableRng;
+    /// # let sharks = Sharks(2);
+    /// # let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
+    /// # let shares: Vec<Share> = sharks.dealer_rng(&[1, 2, 3, 4], &mut rng).take(3).collect();
+    /// // Recover original shares from original shares up to threshold shares
+    /// let recovered_shares = sharks.recover_shares(
+    ///     [Some(&shares[0]), None, Some(&shares[2])],
+    ///     3,
+    /// );
+    /// // Shares correctly recovered
+    /// assert!(recovered_shares.is_ok());
+    /// let recovered_shares = recovered_shares.unwrap();
+    /// assert_eq!(recovered_shares.len(), 3);
+    /// // Remove shares for demonstration purposes
+    /// let recovered_shares = sharks.recover_shares([Some(&shares[0]), None, None], 3);
+    /// // Not enough shares to recover shares
+    /// assert!(recovered_shares.is_err());
+    pub fn recover_shares<'a, T>(&self, shares: T, n: usize) -> Result<Vec<Share>, &str>
+    where
+        T: IntoIterator<Item = Option<&'a Share>>,
+        T::IntoIter: Iterator<Item = Option<&'a Share>>,
+    {
+        let mut share_length: Option<usize> = None;
+        let mut keys: HashSet<u8> = HashSet::new();
+        let mut values: Vec<Share> = Vec::new();
+
+        let mut count = 0;
+        for share in shares.into_iter() {
+            if share.is_none() {
+                count += 1;
+                continue;
+            }
+
+            let share = share.unwrap();
+
+            if share_length.is_none() {
+                share_length = Some(share.y.len());
+            }
+
+            if Some(share.y.len()) != share_length {
+                return Err("All shares must have the same length");
+            } else {
+                keys.insert(share.x.0);
+                values.push(share.clone());
+                count += 1;
+            }
+        }
+
+        if count != n {
+            return Err("provide a shares array of size n; use None for unknown shares");
+        }
+
+        if keys.is_empty() || (keys.len() < self.0 as usize) {
+            Err("Not enough shares to recover original shares")
+        } else {
+            let mut new_shares = Vec::new();
+            for i in 1..=n {
+                new_shares.push(math::reshare(&values, i));
+            }
+            Ok(new_shares)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -214,5 +284,54 @@ mod tests {
         let shares: Vec<Share> = sharks.make_shares(&[1, 2, 3, 4]).take(255).collect();
         let secret = sharks.recover(&shares).unwrap();
         assert_eq!(secret, vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_reshare_works() {
+        let sharks = Sharks(3);
+        let shares: Vec<Share> = sharks.make_shares(&[1, 2, 3, 4]).take(4).collect();
+
+        let recovered_shares = sharks
+            .recover_shares(
+                [Some(&shares[0]), None, Some(&shares[2]), Some(&shares[3])],
+                4,
+            )
+            .unwrap();
+        assert_eq!(recovered_shares.len(), 4);
+
+        for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
+            assert_eq!(recovered_share.x, share.x);
+            assert_eq!(recovered_share.y, share.y);
+        }
+
+        let recovered_shares = sharks
+            .recover_shares(
+                [None, Some(&shares[1]), Some(&shares[2]), Some(&shares[3])],
+                4,
+            )
+            .unwrap();
+        assert_eq!(recovered_shares.len(), 4);
+
+        for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
+            assert_eq!(recovered_share.x, share.x);
+            assert_eq!(recovered_share.y, share.y);
+        }
+
+        let recovered_shares = sharks
+            .recover_shares(
+                [Some(&shares[0]), Some(&shares[1]), Some(&shares[2]), None],
+                4,
+            )
+            .unwrap();
+        assert_eq!(recovered_shares.len(), 4);
+
+        for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
+            assert_eq!(recovered_share.x, share.x);
+            assert_eq!(recovered_share.y, share.y);
+        }
+
+        let recovered_shares =
+            sharks.recover_shares([Some(&shares[0]), None, None, Some(&shares[3])], 4);
+        assert!(recovered_shares.is_err());
     }
 }
