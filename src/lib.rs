@@ -229,11 +229,12 @@ impl Sharks {
         if keys.is_empty() || (keys.len() < self.0 as usize) {
             Err("Not enough shares to recover original shares")
         } else {
-            let mut new_shares = Vec::new();
-            for i in 1..=n {
-                new_shares.push(math::reshare(&values, i));
+            if self.0 == 1 {
+                // if threshold is 1, return the shares as is n times
+                Ok(values.iter().cloned().cycle().take(n).collect())
+            } else {
+                Ok((1..=n).map(|i| math::reshare(&values, i)).collect())
             }
-            Ok(new_shares)
         }
     }
 }
