@@ -6,10 +6,10 @@
 [![Codecov](https://codecov.io/gh/multifactor/gf256sss/branch/master/graph/badge.svg)](https://codecov.io/gh/multifactor/gf256sss)
 [![License](https://camo.githubusercontent.com/47069b7e06b64b608c692a8a7f40bc6915cf629c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d417061636865322e302532464d49542d626c75652e737667)](https://github.com/multifactor/gf256sss/blob/master/COPYRIGHT)
 
-Fast, small and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate
+Fast, small, generic and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate
 
 Documentation:
--    [API reference (docs.rs)](https://docs.rs/gf256sss)
+- [API reference (docs.rs)](https://docs.rs/gf256sss)
 
 ## Usage
 
@@ -24,7 +24,7 @@ If your environment doesn't support `std`:
 
 ```toml
 [dependencies]
-gf256sss = { version = "0.4", default-features = false }
+gf256sss = { version = "0.6", default-features = false }
 ```
 
 To get started using gf256sss, see the [Rust docs](https://docs.rs/gf256sss)
@@ -36,6 +36,12 @@ The API is simple and to the point, with minimal configuration.
 
 ### Fast and small
 The code is as idiomatic and clean as possible, with minimum external dependencies.
+
+### Generic on irreducible polynomial
+GF256 field support largely used primitive irreducible polynomials like 0x11B (AES), 0x11D (RS codes), 0x12B (Reed-Solomon codes), and more.
+
+### Compile time asserts
+Any operation on the field with a non-whitelisted polynomial will fail to build due to const assertions done at compile time.
 
 ### Secure by design
 The implementation forbids the user to choose parameters that would result in an insecure application,
