@@ -3,10 +3,12 @@
 [![Rust](https://github.com/multifactor/gf256sss/workflows/Rust/badge.svg?branch=master)](https://github.com/multifactor/gf256sss/actions)
 [![Crates](https://img.shields.io/crates/v/gf256sss.svg)](https://crates.io/crates/gf256sss)
 [![Docs](https://docs.rs/gf256sss/badge.svg)](https://docs.rs/gf256sss)
-[![Codecov](https://codecov.io/gh/multifactor/gf256sss/branch/master/graph/badge.svg)](https://codecov.io/gh/multifactor/gf256sss)
 [![License](https://camo.githubusercontent.com/47069b7e06b64b608c692a8a7f40bc6915cf629c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d417061636865322e302532464d49542d626c75652e737667)](https://github.com/multifactor/gf256sss/blob/master/COPYRIGHT)
 
 Fast, small, generic and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate
+
+> [!Note] 
+> This repository is a fork of [c0dearm/sharks](https://github.com/c0dearm/sharks), but will be actively developed and maintained by Multifactor.
 
 Documentation:
 - [API reference (docs.rs)](https://docs.rs/gf256sss)
