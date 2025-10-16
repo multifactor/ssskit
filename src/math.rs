@@ -120,7 +120,7 @@ pub fn random_polynomial<R: rand::Rng, const POLY: u16>(
 pub fn get_evaluator<const POLY: u16>(
     polys: Vec<Vec<GF256<POLY>>>,
 ) -> impl Iterator<Item = Share<POLY>> {
-    (1..=u8::max_value()).map(GF256).map(move |x| Share {
+    (1..=u8::MAX).map(GF256).map(move |x| Share {
         x: x.clone(),
         y: polys
             .iter()

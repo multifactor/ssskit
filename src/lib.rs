@@ -242,13 +242,11 @@ impl Sharks {
 
         if keys.is_empty() || (keys.len() < self.0 as usize) {
             Err("Not enough shares to recover original shares")
+        } else if self.0 == 1 {
+            // if threshold is 1, return the shares as is n times
+            Ok(values.iter().cloned().cycle().take(n).collect())
         } else {
-            if self.0 == 1 {
-                // if threshold is 1, return the shares as is n times
-                Ok(values.iter().cloned().cycle().take(n).collect())
-            } else {
-                Ok((1..=n).map(|i| math::reshare(&values, i)).collect())
-            }
+            Ok((1..=n).map(|i| math::reshare(&values, i)).collect())
         }
     }
 }

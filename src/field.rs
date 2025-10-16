@@ -59,6 +59,12 @@ pub struct Tables<const POLY: u16> {
     pub exp: [u8; 512],
 }
 
+impl<const POLY: u16> Default for Tables<POLY> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<const POLY: u16> Tables<POLY> {
     pub const fn new() -> Self {
         assert!(is_primitive(POLY), "POLY must be primitive");
@@ -91,12 +97,14 @@ impl<const POLY: u16> GF256<POLY> {
     pub const TABLES: Tables<POLY> = Tables::new();
 
     pub fn add(self, other: Self) -> Self {
-        let _ = Self::POLY_CHECK; // const check will be amortized by the compiler
+        #[allow(path_statements)]
+        Self::POLY_CHECK; // const check will be amortized by the compiler
         Self(self.0 ^ other.0)
     }
 
     pub fn sub(self, other: Self) -> Self {
-        let _ = Self::POLY_CHECK;
+        #[allow(path_statements)]
+        Self::POLY_CHECK;
         Self(self.0 ^ other.0)
     }
 
