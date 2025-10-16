@@ -1,15 +1,28 @@
 [package]
 name = "sharks"
 version = "0.6.0"
-authors = ["Aitor Ruano <codearm@pm.me>"]
+authors = [
+  "Aitor Ruano <codearm@pm.me>",
+  "Multifactor, Inc. <https://multifactor.com>",
+]
 description = "Fast, small and secure Shamir's Secret Sharing library crate"
 homepage = "https://github.com/multifactor/gf256sss"
 repository = "https://github.com/multifactor/gf256sss"
+documentation = "https://docs.rs/gf256sss"
 readme = "README.md"
 keywords = ["shamir", "secret", "sharing", "share", "crypto"]
 categories = ["algorithms", "cryptography", "mathematics"]
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 edition = "2021"
+rust-version = "1.64"
+include = [
+  "src/**",
+  "README.md",
+  "CHANGELOG.md",
+  "COPYRIGHT",
+  "LICENSE-APACHE",
+  "LICENSE-MIT",
+]
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -36,3 +49,8 @@ rstest = "0.26.1"
 [[bench]]
 name = "benchmarks"
 harness = false
+
+[package.metadata.docs.rs]
+features = ["std"]
+all-features = false
+rustdoc-args = ["--cfg", "docsrs"]
