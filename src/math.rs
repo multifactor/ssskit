@@ -2,7 +2,7 @@
 
 use alloc::vec::Vec;
 
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::{Distribution, Uniform};
 
 use super::field::GF256;
 use super::share::Share;
@@ -95,7 +95,7 @@ pub fn reshare(shares: &[Share], index: usize) -> Share {
 pub fn random_polynomial<R: rand::Rng>(s: GF256, k: u8, rng: &mut R) -> Vec<GF256> {
     let k = k as usize;
     let mut poly = Vec::with_capacity(k);
-    let between = Uniform::new_inclusive(1, 255);
+    let between = Uniform::new_inclusive(1, 255).unwrap();
 
     for _ in 1..k {
         poly.push(GF256(between.sample(rng)));
@@ -124,7 +124,7 @@ pub fn get_evaluator(polys: Vec<Vec<GF256>>) -> impl Iterator<Item = Share> {
 
 #[cfg(test)]
 mod tests {
-    use super::{get_evaluator, interpolate, random_polynomial, Share, GF256};
+    use super::{GF256, Share, get_evaluator, interpolate, random_polynomial};
     use alloc::{vec, vec::Vec};
     use rand_chacha::rand_core::SeedableRng;
 

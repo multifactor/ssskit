@@ -48,6 +48,9 @@ use hashbrown::HashSet;
 use field::GF256;
 pub use share::Share;
 
+#[cfg(feature = "std")]
+use rand::{rngs::StdRng, SeedableRng};
+
 /// Tuple struct which implements methods to generate shares and recover secrets over a 256 bits Galois Field.
 /// Its only parameter is the minimum shares threshold.
 ///
@@ -114,7 +117,7 @@ impl Sharks {
     /// let shares: Vec<Share> = dealer.take(3).collect();
     #[cfg(feature = "std")]
     pub fn dealer(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
-        let mut rng = rand::thread_rng();
+        let mut rng = StdRng::from_os_rng();
         self.dealer_rng(secret, &mut rng)
     }
 
