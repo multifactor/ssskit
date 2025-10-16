@@ -4,6 +4,7 @@
 //! ```
 //! use sharks::{ Sharks, Share };
 //!
+//! # const POLY: u16 = 0x11d_u16;
 //! // Set a minimum threshold of 10 shares
 //! let sharks = Sharks(10);
 //! // Obtain an iterator over the shares for secret [1, 2, 3, 4]
@@ -11,7 +12,7 @@
 //! # {
 //! let dealer = sharks.dealer(&[1, 2, 3, 4]);
 //! // Get 10 shares
-//! let shares: Vec<Share> = dealer.take(10).collect();
+//! let shares: Vec<Share<POLY>> = dealer.take(10).collect();
 //! // Recover the original secret!
 //! let secret = sharks.recover(shares.as_slice()).unwrap();
 //! assert_eq!(secret, vec![1, 2, 3, 4]);
@@ -21,15 +22,16 @@
 //! Usage example (no std):
 //! ```
 //! use sharks::{ Sharks, Share };
-//! use rand_chacha::rand_core::SeedableRng;
+//! use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
 //!
+//! # const POLY: u16 = 0x11d_u16;
 //! // Set a minimum threshold of 10 shares
 //! let sharks = Sharks(10);
 //! // Obtain an iterator over the shares for secret [1, 2, 3, 4]
 //! let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-//! let dealer = sharks.dealer_rng(&[1, 2, 3, 4], &mut rng);
+//! let dealer = sharks.dealer_rng::<ChaCha8Rng, POLY>(&[1, 2, 3, 4], &mut rng);
 //! // Get 10 shares
-//! let shares: Vec<Share> = dealer.take(10).collect();
+//! let shares: Vec<Share<POLY>> = dealer.take(10).collect();
 //! // Recover the original secret!
 //! let secret = sharks.recover(shares.as_slice()).unwrap();
 //! assert_eq!(secret, vec![1, 2, 3, 4]);
@@ -57,6 +59,7 @@ use rand::{rngs::StdRng, SeedableRng};
 /// Usage example:
 /// ```
 /// # use sharks::{ Sharks, Share };
+/// # const POLY: u16 = 0x11d_u16;
 /// // Set a minimum threshold of 10 shares
 /// let sharks = Sharks(10);
 /// // Obtain an iterator over the shares for secret [1, 2, 3, 4]
@@ -64,7 +67,7 @@ use rand::{rngs::StdRng, SeedableRng};
 /// # {
 /// let dealer = sharks.dealer(&[1, 2, 3, 4]);
 /// // Get 10 shares
-/// let shares: Vec<Share> = dealer.take(10).collect();
+/// let shares: Vec<Share<POLY>> = dealer.take(10).collect();
 /// // Recover the original secret!
 /// let secret = sharks.recover(shares.as_slice()).unwrap();
 /// assert_eq!(secret, vec![1, 2, 3, 4]);
@@ -83,18 +86,19 @@ impl Sharks {
     /// Example:
     /// ```
     /// # use sharks::{ Sharks, Share };
-    /// # use rand_chacha::rand_core::SeedableRng;
+    /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
+    /// # const POLY: u16 = 0x11d_u16;
     /// # let sharks = Sharks(3);
     /// // Obtain an iterator over the shares for secret [1, 2]
     /// let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-    /// let dealer = sharks.dealer_rng(&[1, 2], &mut rng);
+    /// let dealer = sharks.dealer_rng::<ChaCha8Rng, POLY>(&[1, 2], &mut rng);
     /// // Get 3 shares
-    /// let shares: Vec<Share> = dealer.take(3).collect();
-    pub fn dealer_rng<R: rand::Rng>(
+    /// let shares: Vec<Share<POLY>> = dealer.take(3).collect();
+    pub fn dealer_rng<R: rand::Rng, const POLY: u16>(
         &self,
         secret: &[u8],
         rng: &mut R,
-    ) -> impl Iterator<Item = Share> {
+    ) -> impl Iterator<Item = Share<POLY>> {
         let mut polys = Vec::with_capacity(secret.len());
 
         for chunk in secret {
@@ -110,13 +114,14 @@ impl Sharks {
     /// Example:
     /// ```
     /// # use sharks::{ Sharks, Share };
+    /// # const POLY: u16 = 0x11d_u16;
     /// # let sharks = Sharks(3);
     /// // Obtain an iterator over the shares for secret [1, 2]
-    /// let dealer = sharks.dealer(&[1, 2]);
+    /// let dealer = sharks.dealer::<POLY>(&[1, 2]);
     /// // Get 3 shares
-    /// let shares: Vec<Share> = dealer.take(3).collect();
+    /// let shares: Vec<Share<POLY>> = dealer.take(3).collect();
     #[cfg(feature = "std")]
-    pub fn dealer(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
+    pub fn dealer<const POLY: u16>(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
         let mut rng = StdRng::from_os_rng();
         self.dealer_rng(secret, &mut rng)
     }
@@ -128,10 +133,11 @@ impl Sharks {
     /// Example:
     /// ```
     /// # use sharks::{ Sharks, Share };
-    /// # use rand_chacha::rand_core::SeedableRng;
+    /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
+    /// # const POLY: u16 = 0x11d_u16;
     /// # let sharks = Sharks(3);
     /// # let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-    /// # let mut shares: Vec<Share> = sharks.dealer_rng(&[1], &mut rng).take(3).collect();
+    /// # let mut shares: Vec<Share<POLY>> = sharks.dealer_rng::<ChaCha8Rng, POLY>(&[1], &mut rng).take(3).collect();
     /// // Recover original secret from shares
     /// let mut secret = sharks.recover(&shares);
     /// // Secret correctly recovered
@@ -141,14 +147,14 @@ impl Sharks {
     /// secret = sharks.recover(&shares);
     /// // Not enough shares to recover secret
     /// assert!(secret.is_err());
-    pub fn recover<'a, T>(&self, shares: T) -> Result<Vec<u8>, &str>
+    pub fn recover<'a, T, const POLY: u16>(&self, shares: T) -> Result<Vec<u8>, &str>
     where
-        T: IntoIterator<Item = &'a Share>,
-        T::IntoIter: Iterator<Item = &'a Share>,
+        T: IntoIterator<Item = &'a Share<POLY>>,
+        T::IntoIter: Iterator<Item = &'a Share<POLY>>,
     {
         let mut share_length: Option<usize> = None;
         let mut keys: HashSet<u8> = HashSet::new();
-        let mut values: Vec<Share> = Vec::new();
+        let mut values: Vec<Share<POLY>> = Vec::new();
 
         for share in shares.into_iter() {
             if share_length.is_none() {
@@ -177,10 +183,11 @@ impl Sharks {
     /// Example:
     /// ```
     /// # use sharks::{ Sharks, Share };
-    /// # use rand_chacha::rand_core::SeedableRng;
+    /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
+    /// # const POLY: u16 = 0x11d_u16;
     /// # let sharks = Sharks(2);
     /// # let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-    /// # let shares: Vec<Share> = sharks.dealer_rng(&[1, 2, 3, 4], &mut rng).take(3).collect();
+    /// # let shares: Vec<Share<POLY>> = sharks.dealer_rng::<ChaCha8Rng, POLY>(&[1, 2, 3, 4], &mut rng).take(3).collect();
     /// // Recover original shares from original shares up to threshold shares
     /// let recovered_shares = sharks.recover_shares(
     ///     [Some(&shares[0]), None, Some(&shares[2])],
@@ -194,14 +201,18 @@ impl Sharks {
     /// let recovered_shares = sharks.recover_shares([Some(&shares[0]), None, None], 3);
     /// // Not enough shares to recover shares
     /// assert!(recovered_shares.is_err());
-    pub fn recover_shares<'a, T>(&self, shares: T, n: usize) -> Result<Vec<Share>, &str>
+    pub fn recover_shares<'a, T, const POLY: u16>(
+        &self,
+        shares: T,
+        n: usize,
+    ) -> Result<Vec<Share<POLY>>, &str>
     where
-        T: IntoIterator<Item = Option<&'a Share>>,
-        T::IntoIter: Iterator<Item = Option<&'a Share>>,
+        T: IntoIterator<Item = Option<&'a Share<POLY>>>,
+        T::IntoIter: Iterator<Item = Option<&'a Share<POLY>>>,
     {
         let mut share_length: Option<usize> = None;
         let mut keys: HashSet<u8> = HashSet::new();
-        let mut values: Vec<Share> = Vec::new();
+        let mut values: Vec<Share<POLY>> = Vec::new();
 
         let mut count = 0;
         for share in shares.into_iter() {
@@ -247,9 +258,11 @@ mod tests {
     use super::{Share, Sharks};
     use alloc::{vec, vec::Vec};
 
+    const POLY: u16 = 0x11d_u16;
+
     impl Sharks {
         #[cfg(not(feature = "std"))]
-        fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
+        fn make_shares<const POLY: u16>(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
             use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
 
             let mut rng = ChaCha8Rng::from_seed([0x90; 32]);
@@ -257,7 +270,7 @@ mod tests {
         }
 
         #[cfg(feature = "std")]
-        fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share> {
+        fn make_shares<const POLY: u16>(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
             self.dealer(secret)
         }
     }
@@ -265,7 +278,7 @@ mod tests {
     #[test]
     fn test_insufficient_shares_err() {
         let sharks = Sharks(255);
-        let shares: Vec<Share> = sharks.make_shares(&[1]).take(254).collect();
+        let shares: Vec<Share<POLY>> = sharks.make_shares(&[1]).take(254).collect();
         let secret = sharks.recover(&shares);
         assert!(secret.is_err());
     }
@@ -273,7 +286,7 @@ mod tests {
     #[test]
     fn test_duplicate_shares_err() {
         let sharks = Sharks(255);
-        let mut shares: Vec<Share> = sharks.make_shares(&[1]).take(255).collect();
+        let mut shares: Vec<Share<POLY>> = sharks.make_shares(&[1]).take(255).collect();
         shares[1] = Share {
             x: shares[0].x.clone(),
             y: shares[0].y.clone(),
@@ -285,7 +298,7 @@ mod tests {
     #[test]
     fn test_integration_works() {
         let sharks = Sharks(255);
-        let shares: Vec<Share> = sharks.make_shares(&[1, 2, 3, 4]).take(255).collect();
+        let shares: Vec<Share<POLY>> = sharks.make_shares(&[1, 2, 3, 4]).take(255).collect();
         let secret = sharks.recover(&shares).unwrap();
         assert_eq!(secret, vec![1, 2, 3, 4]);
     }
@@ -293,7 +306,7 @@ mod tests {
     #[test]
     fn test_reshare_works() {
         let sharks = Sharks(3);
-        let shares: Vec<Share> = sharks.make_shares(&[1, 2, 3, 4]).take(4).collect();
+        let shares: Vec<Share<POLY>> = sharks.make_shares(&[1, 2, 3, 4]).take(4).collect();
 
         let recovered_shares = sharks
             .recover_shares(
