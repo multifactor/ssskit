@@ -30,9 +30,24 @@ const fn gf256_mul(a: u8, b: u8, poly: u16) -> u8 {
     (result & 0xFF) as u8
 }
 
-const PRIMITIVE_POLYS: &[u16] = &[
-    0x11B, 0x11D, 0x12B, 0x12D, 0x14F, 0x15B, 0x15D, 0x163, 0x169, 0x16B, 0x187, 0x18D, 0x19F,
-    0x1AF, 0x1C3, 0x1FD,
+const fn gf256_pow(base: u8, exponent: u8, poly: u16) -> u8 {
+    let mut result = 1u8;
+    let mut base_val = base;
+    let mut exponent_val = exponent;
+
+    while exponent_val > 0 {
+        if (exponent_val & 1) == 1 {
+            result = gf256_mul(result, base_val, poly);
+        }
+        base_val = gf256_mul(base_val, base_val, poly);
+        exponent_val >>= 1;
+    }
+    result
+}
+
+pub const PRIMITIVE_POLYS: &[u16] = &[
+    0x11B, 0x11D, 0x12B, 0x12D, 0x14D, 0x15F, 0x163, 0x165, 0x169, 0x171, 0x187, 0x1A9, 0x1C3,
+    0x1CF, 0x1E7, 0x1F5,
 ];
 
 #[inline]
@@ -65,13 +80,38 @@ impl<const POLY: u16> Default for Tables<POLY> {
     }
 }
 
+const fn is_primitive_element<const POLY: u16>(x: u8) -> bool {
+    const FACTORS: [u8; 3] = [3, 5, 17];
+
+    let mut i = 0;
+    while i < FACTORS.len() {
+        if gf256_pow(x, 255 / FACTORS[i], POLY) == 1 {
+            return false;
+        }
+        i += 1;
+    }
+    gf256_pow(x, 255, POLY) == 1
+}
+
+const fn find_generator<const POLY: u16>() -> u8 {
+    let mut i = 1u16;
+    while i <= 255 {
+        if is_primitive_element::<POLY>(i as u8) {
+            return i as u8;
+        }
+        i += 1;
+    }
+    panic!("No primitive element found");
+}
+
 impl<const POLY: u16> Tables<POLY> {
     pub const fn new() -> Self {
         assert!(is_primitive(POLY), "POLY must be primitive");
 
         let mut log = [0u8; 256];
         let mut exp = [0u8; 512];
-        let gen = 0x02_u8;
+
+        let gen = find_generator::<POLY>();
 
         let mut i = 0usize;
         let mut x = 1u8;
@@ -358,4 +398,81 @@ mod tests {
     fn non_primitive_poly(#[case] poly: u16) {
         assert!(!super::is_primitive(poly));
     }
+
+    // Shared test body generic over the primitive polynomial
+    fn run_ops_all<const POLY: u16>() {
+        // Addition/Subtraction properties across full byte domain
+        let mut a_val = 0u16;
+        while a_val <= 255 {
+            let a = a_val as u8;
+            assert_eq!((GF256::<{ POLY }>(a) + GF256::<{ POLY }>(0)).0, a);
+            assert_eq!((GF256::<{ POLY }>(a) - GF256::<{ POLY }>(0)).0, a);
+            assert_eq!((GF256::<{ POLY }>(a) - GF256::<{ POLY }>(a)).0, 0);
+            assert_eq!((GF256::<{ POLY }>(a) + GF256::<{ POLY }>(a)).0, 0);
+            a_val += 1;
+        }
+
+        // Sampled values to validate mul/div against reference implementation
+        let samples: [u8; 16] = [0, 1, 2, 3, 4, 7, 11, 13, 29, 63, 64, 95, 127, 128, 199, 255];
+
+        for &x in &samples {
+            for &y in &samples {
+                // mul equals reference bitwise implementation with POLY
+                let prod = (GF256::<{ POLY }>(x) * GF256::<{ POLY }>(y)).0;
+                let ref_prod = super::gf256_mul(x, y, POLY);
+                assert_eq!(prod, ref_prod);
+
+                // Division inverse property
+                if y != 0 {
+                    assert_eq!(
+                        ((GF256::<{ POLY }>(x) * GF256::<{ POLY }>(y)) / GF256::<{ POLY }>(y)).0,
+                        x
+                    );
+                }
+
+                // Zero rules
+                assert_eq!((GF256::<{ POLY }>(0) * GF256::<{ POLY }>(y)).0, 0);
+                assert_eq!((GF256::<{ POLY }>(x) * GF256::<{ POLY }>(0)).0, 0);
+
+                // Self-division for non-zero
+                if x != 0 {
+                    assert_eq!((GF256::<{ POLY }>(x) / GF256::<{ POLY }>(x)).0, 1);
+                } else {
+                    assert_eq!((GF256::<{ POLY }>(0) / GF256::<{ POLY }>(1)).0, 0);
+                }
+            }
+        }
+    }
+
+    // Minimal macro: declare per-test constant and call the shared test body
+    macro_rules! gen_ops_tests {
+        ( $( ($poly:expr, $name:ident) ),+ $(,)? ) => {
+            $(
+                #[test]
+                fn $name() {
+                    const POLY: u16 = $poly;
+                    run_ops_all::<{ POLY }>();
+                }
+            )+
+        };
+    }
+
+    gen_ops_tests!(
+        (0x11B, ops_poly_11b),
+        (0x11D, ops_poly_11d),
+        (0x12B, ops_poly_12b),
+        (0x12D, ops_poly_12d),
+        (0x14D, ops_poly_14d),
+        (0x15F, ops_poly_15f),
+        (0x163, ops_poly_163),
+        (0x165, ops_poly_165),
+        (0x169, ops_poly_169),
+        (0x171, ops_poly_171),
+        (0x187, ops_poly_187),
+        (0x1A9, ops_poly_1a9),
+        (0x1C3, ops_poly_1c3),
+        (0x1CF, ops_poly_1cf),
+        (0x1E7, ops_poly_1e7),
+        (0x1F5, ops_poly_1f5),
+    );
 }

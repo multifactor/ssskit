@@ -64,6 +64,7 @@ pub fn interpolate_polynomial<const POLY: u16>(
     result
 }
 
+/// Resharing a share at a given index.
 pub fn reshare<const POLY: u16>(shares: &[Share<POLY>], index: usize) -> Share<POLY> {
     // assert that atleast 2 shares exist
     assert!(
@@ -134,18 +135,21 @@ pub fn get_evaluator<const POLY: u16>(
 
 #[cfg(test)]
 mod tests {
-    use super::{get_evaluator, interpolate, random_polynomial, Share, GF256};
+    use super::{get_evaluator, interpolate, random_polynomial, reshare, Share, GF256};
     use alloc::{vec, vec::Vec};
     use rand_chacha::rand_core::SeedableRng;
+    use rstest::rstest;
 
     const POLY: u16 = 0x11d_u16;
 
-    #[test]
-    fn random_polynomial_works() {
-        let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-        let poly = random_polynomial::<_, POLY>(GF256(1), 3, &mut rng);
-        assert_eq!(poly.len(), 3);
-        assert_eq!(poly[2], GF256(1));
+    #[rstest]
+    #[case([0x90; 32], 3)]
+    #[case([0x10; 32], 8)]
+    #[case([0x20; 32], 16)]
+    fn random_polynomial_works(#[case] seed: [u8; 32], #[case] k: usize) {
+        let mut rng = rand_chacha::ChaCha8Rng::from_seed(seed);
+        let poly = random_polynomial::<_, POLY>(GF256(1), k as u8, &mut rng);
+        assert_eq!(poly.len(), k);
     }
 
     #[test]
@@ -158,13 +162,30 @@ mod tests {
         );
     }
 
-    #[test]
-    fn interpolate_works() {
-        let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-        let poly = random_polynomial(GF256(185), 10, &mut rng);
+    #[rstest]
+    #[case([0x90; 32], 10)]
+    #[case([0x10; 32], 8)]
+    #[case([0x20; 32], 16)]
+    fn interpolate_works(#[case] seed: [u8; 32], #[case] k: usize) {
+        let mut rng = rand_chacha::ChaCha8Rng::from_seed(seed);
+        let poly = random_polynomial(GF256(185), k as u8, &mut rng);
         let iter = get_evaluator(vec![poly]);
-        let shares: Vec<Share<POLY>> = iter.take(10).collect();
+        let shares: Vec<Share<POLY>> = iter.take(k).collect();
         let root = interpolate(&shares);
         assert_eq!(root, vec![185]);
+    }
+
+    #[rstest]
+    #[case([0x90; 32], 10, 2)]
+    #[case([0x90; 32], 10, 5)]
+    #[case([0x10; 32], 8, 7)]
+    #[case([0x10; 32], 8, 8)]
+    fn reshare_works(#[case] seed: [u8; 32], #[case] k: usize, #[case] index: usize) {
+        let mut rng = rand_chacha::ChaCha8Rng::from_seed(seed);
+        let poly = random_polynomial(GF256(185), k as u8, &mut rng);
+        let iter = get_evaluator(vec![poly]);
+        let shares: Vec<Share<POLY>> = iter.take(k).collect();
+        let share = reshare(&shares, index);
+        assert_eq!(share.y, shares[index - 1].y);
     }
 }

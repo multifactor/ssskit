@@ -20,9 +20,9 @@ use zeroize::Zeroize;
 ///
 /// // Transmit the share bytes to a printer
 /// # const POLY: u16 = 0x11d_u16;
-/// let sharks = Sharks(3);
+/// let sharks = Sharks::<POLY>(3);
 /// let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-/// let dealer = sharks.dealer_rng::<ChaCha8Rng, POLY>(&[1, 2, 3], &mut rng);
+/// let dealer = sharks.dealer_rng::<ChaCha8Rng>(&[1, 2, 3], &mut rng);
 ///
 /// // Get 5 shares and print paper keys
 /// for s in dealer.take(5) {
@@ -72,8 +72,8 @@ mod tests {
     use super::{Share, GF256};
     use alloc::{vec, vec::Vec};
     use core::convert::TryFrom;
-
     const POLY: u16 = 0x11d_u16;
+
     #[test]
     fn vec_from_share_works() {
         let share = Share::<POLY> {

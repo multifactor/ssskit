@@ -13,8 +13,8 @@ struct Parameters {
 
 fuzz_target!(|params: Parameters| {
     const POLY: u16 = 0x11d_u16;
-    let sharks = Sharks(params.threshold);
-    let dealer = sharks.dealer::<POLY>(&params.secret);
+    let sharks = Sharks::<POLY>(params.threshold);
+    let dealer = sharks.dealer(&params.secret);
 
-    let _shares: Vec<Share<POLY>> = dealer.take(params.n_shares).collect();
+    let _shares = dealer.take(params.n_shares).collect::<Vec<Share<POLY>>>();
 });
