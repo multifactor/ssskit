@@ -1,8 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::convert::TryFrom;
 use std::hint::black_box;
 
-use sharks::{Share, Sharks};
+use gf256sss::{Share, Sharks};
 
 const POLY: u16 = 0x11d_u16;
 

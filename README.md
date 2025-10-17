@@ -1,4 +1,4 @@
-# Sharks
+# GF256SSS
 
 [![Rust](https://github.com/multifactor/gf256sss/workflows/Rust/badge.svg?branch=master)](https://github.com/multifactor/gf256sss/actions)
 [![Crates](https://img.shields.io/crates/v/gf256sss.svg)](https://crates.io/crates/gf256sss)

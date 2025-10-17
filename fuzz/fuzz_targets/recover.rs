@@ -2,7 +2,7 @@
 use libfuzzer_sys::fuzz_target;
 
 use arbitrary::Arbitrary;
-use sharks::{Share, Sharks};
+use gf256sss::{Share, Sharks};
 
 const POLY: u16 = 0x11d_u16;
 #[derive(Debug, Arbitrary)]

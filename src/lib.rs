@@ -2,7 +2,7 @@
 //!
 //! Usage example (std):
 //! ```
-//! use sharks::{ Sharks, Share };
+//! use gf256sss::{ Sharks, Share };
 //!
 //! # const POLY: u16 = 0x11d_u16;
 //! // Set a minimum threshold of 10 shares
@@ -21,7 +21,7 @@
 //!
 //! Usage example (no std):
 //! ```
-//! use sharks::{ Sharks, Share };
+//! use gf256sss::{ Sharks, Share };
 //! use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
 //!
 //! # const POLY: u16 = 0x11d_u16;
@@ -59,7 +59,7 @@ use rand::{rngs::StdRng, SeedableRng};
 ///
 /// Usage example:
 /// ```
-/// # use sharks::{ Sharks, Share };
+/// # use gf256sss::{ Sharks, Share };
 /// # const POLY: u16 = 0x11d_u16;
 /// // Set a minimum threshold of 10 shares
 /// let sharks = Sharks::<POLY>(10);
@@ -86,7 +86,7 @@ impl<const POLY: u16> Sharks<POLY> {
     ///
     /// Example:
     /// ```
-    /// # use sharks::{ Sharks, Share };
+    /// # use gf256sss::{ Sharks, Share };
     /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sharks = Sharks::<POLY>(3);
@@ -114,7 +114,7 @@ impl<const POLY: u16> Sharks<POLY> {
     ///
     /// Example:
     /// ```
-    /// # use sharks::{ Sharks, Share };
+    /// # use gf256sss::{ Sharks, Share };
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sharks = Sharks::<POLY>(3);
     /// // Obtain an iterator over the shares for secret [1, 2]
@@ -133,7 +133,7 @@ impl<const POLY: u16> Sharks<POLY> {
     ///
     /// Example:
     /// ```
-    /// # use sharks::{ Sharks, Share };
+    /// # use gf256sss::{ Sharks, Share };
     /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sharks = Sharks::<POLY>(3);
@@ -183,7 +183,7 @@ impl<const POLY: u16> Sharks<POLY> {
     ///
     /// Example:
     /// ```
-    /// # use sharks::{ Sharks, Share };
+    /// # use gf256sss::{ Sharks, Share };
     /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sharks = Sharks::<POLY>(2);
