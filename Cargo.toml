@@ -1,9 +1,9 @@
 [package]
 name = "gf256sss"
-version = "0.6.0"
+version = "0.1.0"
 authors = [
-  "Aitor Ruano <codearm@pm.me>",
   "Multifactor, Inc. <https://multifactor.com>",
+  "Sambhav Dusad <https://lonerapier.me>",
 ]
 description = "Fast, small and secure Shamir's Secret Sharing library crate"
 homepage = "https://github.com/multifactor/gf256sss"
@@ -14,14 +14,7 @@ keywords = ["shamir", "secret", "sharing", "share", "crypto"]
 categories = ["algorithms", "cryptography", "mathematics"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
-include = [
-  "src/**",
-  "README.md",
-  "CHANGELOG.md",
-  "COPYRIGHT",
-  "LICENSE-APACHE",
-  "LICENSE-MIT",
-]
+include = ["src/**", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 
 [badges]
 maintenance = { status = "actively-developed" }

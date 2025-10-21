@@ -3,7 +3,7 @@
 [![Rust](https://github.com/multifactor/gf256sss/workflows/Rust/badge.svg?branch=master)](https://github.com/multifactor/gf256sss/actions)
 [![Crates](https://img.shields.io/crates/v/gf256sss.svg)](https://crates.io/crates/gf256sss)
 [![Docs](https://docs.rs/gf256sss/badge.svg)](https://docs.rs/gf256sss)
-[![License](https://camo.githubusercontent.com/47069b7e06b64b608c692a8a7f40bc6915cf629c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d417061636865322e302532464d49542d626c75652e737667)](https://github.com/multifactor/gf256sss/blob/master/COPYRIGHT)
+[![License](https://camo.githubusercontent.com/47069b7e06b64b608c692a8a7f40bc6915cf629c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d417061636865322e302532464d49542d626c75652e737667)](LICENSE-MIT)
 
 Fast, small, generic and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate
 
@@ -19,14 +19,14 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-gf256sss = "0.4"
+gf256sss = "0.1"
 ```
 
 If your environment doesn't support `std`:
 
 ```toml
 [dependencies]
-gf256sss = { version = "0.6", default-features = false }
+gf256sss = { version = "0.1", default-features = false }
 ```
 
 To get started using gf256sss, see the [Rust docs](https://docs.rs/gf256sss)
@@ -81,5 +81,8 @@ Many thanks!
 gf256sss is distributed under the terms of both the MIT license and the
 Apache License (Version 2.0).
 
-See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT), and
-[COPYRIGHT](COPYRIGHT) for details.
+See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
+
+# Acknowledgments
+
+This project is derived from the excellent work in the original [sharks](https://github.com/c0dearm/sharks) repository by Aitor Ruano (`c0dearm`). We appreciate Aitor's foundational contributions, on which this crate is based.
