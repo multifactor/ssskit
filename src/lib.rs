@@ -51,9 +51,6 @@ use field::GF256;
 pub use field::PRIMITIVE_POLYS;
 pub use share::Share;
 
-#[cfg(feature = "std")]
-use rand::{rngs::StdRng, SeedableRng};
-
 /// Tuple struct which implements methods to generate shares and recover secrets over a 256 bits Galois Field.
 /// Its only parameter is the minimum shares threshold.
 ///
@@ -123,7 +120,7 @@ impl<const POLY: u16> SecretSharing<POLY> {
     /// let shares = dealer.take(3).collect::<Vec<Share<POLY>>>();
     #[cfg(feature = "std")]
     pub fn dealer(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
-        let mut rng = StdRng::from_os_rng();
+        let mut rng = rand::thread_rng();
         self.dealer_rng(secret, &mut rng)
     }
 

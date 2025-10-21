@@ -2,7 +2,8 @@
 
 use alloc::vec::Vec;
 
-use rand::distr::{Distribution, Uniform};
+use rand::distributions::Distribution;
+use rand::distributions::Uniform;
 
 use super::field::GF256;
 use super::share::Share;
@@ -104,7 +105,7 @@ pub fn random_polynomial<R: rand::Rng, const POLY: u16>(
 ) -> Vec<GF256<POLY>> {
     let k = k as usize;
     let mut poly = Vec::with_capacity(k);
-    let between = Uniform::new_inclusive(1, 255).unwrap();
+    let between = Uniform::new_inclusive(1, 255);
 
     for _ in 1..k {
         poly.push(GF256(between.sample(rng)));
