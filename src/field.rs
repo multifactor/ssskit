@@ -1,5 +1,5 @@
 // Basic operations overrided for the Galois Field 256 (2**8)
-// Uses pre-calculated tables for 0x11d primitive polynomial (x**8 + x**4 + x**3 + x**2 + 1)
+// Implements the operations over general irreducible polynomials.
 
 use core::iter::{Product, Sum};
 use core::ops::{Add, Div, Mul, Sub};
@@ -10,6 +10,7 @@ use arbitrary::Arbitrary;
 #[cfg(feature = "zeroize_memory")]
 use zeroize::Zeroize;
 
+#[inline]
 const fn gf256_mul(a: u8, b: u8, poly: u16) -> u8 {
     let mut result = 0u16;
     let mut a_val = a as u16;
@@ -30,6 +31,7 @@ const fn gf256_mul(a: u8, b: u8, poly: u16) -> u8 {
     (result & 0xFF) as u8
 }
 
+#[inline]
 const fn gf256_pow(base: u8, exponent: u8, poly: u16) -> u8 {
     let mut result = 1u8;
     let mut base_val = base;
@@ -80,6 +82,7 @@ impl<const POLY: u16> Default for Tables<POLY> {
     }
 }
 
+#[inline]
 const fn is_primitive_element<const POLY: u16>(x: u8) -> bool {
     const FACTORS: [u8; 3] = [3, 5, 17];
 
@@ -93,6 +96,7 @@ const fn is_primitive_element<const POLY: u16>(x: u8) -> bool {
     gf256_pow(x, 255, POLY) == 1
 }
 
+#[inline]
 const fn find_generator<const POLY: u16>() -> u8 {
     let mut i = 1u16;
     while i <= 255 {

@@ -2,7 +2,7 @@
 use libfuzzer_sys::fuzz_target;
 
 use arbitrary::Arbitrary;
-use gf256sss::{Share, Sharks};
+use gf256sss::{SecretSharing, Share};
 
 const POLY: u16 = 0x11d_u16;
 #[derive(Debug, Arbitrary)]
@@ -12,6 +12,6 @@ struct Parameters {
 }
 
 fuzz_target!(|params: Parameters| {
-    let sharks = Sharks::<POLY>(params.threshold);
-    let _secret = sharks.recover(&params.shares);
+    let sss = SecretSharing::<POLY>(params.threshold);
+    let _secret = sss.recover(&params.shares);
 });

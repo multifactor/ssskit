@@ -1,27 +1,27 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint::black_box;
 
-use gf256sss::{Share, Sharks};
+use gf256sss::{SecretSharing, Share};
 
 const POLY: u16 = 0x11d_u16;
 
 fn dealer<const POLY: u16>(c: &mut Criterion) {
-    let sharks = Sharks::<POLY>(255);
-    let mut dealer = sharks.dealer(&[1]);
+    let sss = SecretSharing::<POLY>(255);
+    let mut dealer = sss.dealer(&[1]);
 
     c.bench_function("obtain_shares_dealer", |b| {
-        b.iter(|| sharks.dealer(black_box(&[1])))
+        b.iter(|| sss.dealer(black_box(&[1])))
     });
     c.bench_function("step_shares_dealer", |b| b.iter(|| dealer.next()));
 }
 
 fn recover<const POLY: u16>(c: &mut Criterion) {
-    let sharks = Sharks::<POLY>(255);
-    let dealer = sharks.dealer(&[1]);
+    let sss = SecretSharing::<POLY>(255);
+    let dealer = sss.dealer(&[1]);
     let shares = dealer.take(255).collect::<Vec<Share<POLY>>>();
 
     c.bench_function("recover_secret", |b| {
-        b.iter(|| sharks.recover(black_box(&shares)))
+        b.iter(|| sss.recover(black_box(&shares)))
     });
 }
 

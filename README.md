@@ -3,7 +3,7 @@
 [![Rust](https://github.com/multifactor/gf256sss/workflows/Rust/badge.svg?branch=master)](https://github.com/multifactor/gf256sss/actions)
 [![Crates](https://img.shields.io/crates/v/gf256sss.svg)](https://crates.io/crates/gf256sss)
 [![Docs](https://docs.rs/gf256sss/badge.svg)](https://docs.rs/gf256sss)
-[![License](https://camo.githubusercontent.com/47069b7e06b64b608c692a8a7f40bc6915cf629c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d417061636865322e302532464d49542d626c75652e737667)](LICENSE-MIT)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
 
 Fast, small, generic and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate
 
@@ -62,11 +62,9 @@ You can run them with `cargo test` and `cargo bench`.
 
 ### Benchmark results [min mean max]
 
-| CPU                                      | obtain_shares_dealer            | step_shares_dealer              | recover_secret                  | share_from_bytes                | share_to_bytes                  |
-| ---------------------------------------- | ------------------------------- | ------------------------------- | ------------------------------- | ------------------------------- | ------------------------------- |
-| Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz | [1.4321 us 1.4339 us 1.4357 us] | [1.3385 ns 1.3456 ns 1.3552 ns] | [228.77 us 232.17 us 236.23 us] | [24.688 ns 25.083 ns 25.551 ns] | [22.832 ns 22.910 ns 22.995 ns] |
-| Intel(R) Core(TM) i7-8565U CPU @ 1.80GHz | [1.3439 us 1.3499 us 1.3562 us] | [1.5416 ns 1.5446 ns 1.5481 ns] | [197.46 us 198.37 us 199.22 us] | [20.455 ns 20.486 ns 20.518 ns] | [18.726 ns 18.850 ns 18.993 ns] |
-| Apple M1 ARM (Macbook Air)               | [3.3367 us 3.3629 us 3.4058 us] | [741.75 ps 742.65 ps 743.52 ps] | [210.14 us 210.23 us 210.34 us] | [27.567 ns 27.602 ns 27.650 ns] | [26.716 ns 26.735 ns 26.755 ns] |
+| CPU          | obtain_shares_dealer            | step_shares_dealer              | recover_secret                  | share_from_bytes                | share_to_bytes                  |
+| ------------ | ------------------------------- | ------------------------------- | ------------------------------- | ------------------------------- | ------------------------------- |
+| Apple M1 Pro | [2.6976 µs 2.7007 µs 2.7039 µs] | [938.79 ps 939.83 ps 941.04 ps] | [190.00 µs 190.46 µs 191.06 µs] | [31.176 ns 31.311 ns 31.529 ns] | [23.196 ns 23.211 ns 23.230 ns] |
 
 # Contributing
 

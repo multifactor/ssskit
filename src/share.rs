@@ -12,7 +12,7 @@ use zeroize::Zeroize;
 ///
 /// Usage example:
 /// ```
-/// use gf256sss::{Sharks, Share};
+/// use gf256sss::{SecretSharing, Share};
 /// use core::convert::TryFrom;
 /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
 /// # fn send_to_printer(_: Vec<u8>) {}
@@ -20,9 +20,9 @@ use zeroize::Zeroize;
 ///
 /// // Transmit the share bytes to a printer
 /// # const POLY: u16 = 0x11d_u16;
-/// let sharks = Sharks::<POLY>(3);
+/// let sss = SecretSharing::<POLY>(3);
 /// let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-/// let dealer = sharks.dealer_rng::<ChaCha8Rng>(&[1, 2, 3], &mut rng);
+/// let dealer = sss.dealer_rng::<ChaCha8Rng>(&[1, 2, 3], &mut rng);
 ///
 /// // Get 5 shares and print paper keys
 /// for s in dealer.take(5) {
@@ -32,7 +32,7 @@ use zeroize::Zeroize;
 /// // Get share bytes from an external source and recover secret
 /// let shares_bytes: Vec<Vec<u8>> = ask_shares();
 /// let shares: Vec<Share<POLY>> = shares_bytes.iter().map(|s| Share::<POLY>::try_from(s.as_slice()).unwrap()).collect();
-/// let secret = sharks.recover(&shares).unwrap();
+/// let secret = sss.recover(&shares).unwrap();
 #[derive(Clone)]
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary, Debug))]
 #[cfg_attr(feature = "zeroize_memory", derive(Zeroize))]
