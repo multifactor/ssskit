@@ -2,7 +2,7 @@
 use libfuzzer_sys::fuzz_target;
 
 use arbitrary::Arbitrary;
-use gf256sss::{SecretSharing, Share};
+use ssskit::{SecretSharing, Share};
 
 const POLY: u16 = 0x11d_u16;
 #[derive(Debug, Arbitrary)]

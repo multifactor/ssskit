@@ -1,6 +1,6 @@
 
 [package]
-name = "gf256sss-fuzz"
+name = "ssskit-fuzz"
 version = "0.0.0"
 authors = ["Automatically generated"]
 publish = false
@@ -13,7 +13,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1.4", features = ["derive"] }
 
-[dependencies.gf256sss]
+[dependencies.ssskit]
 path = ".."
 features = ["fuzzing"]
 

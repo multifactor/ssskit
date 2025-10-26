@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint::black_box;
 
-use gf256sss::{SecretSharing, Share};
+use ssskit::{SecretSharing, Share};
 
 const POLY: u16 = 0x11d_u16;
 

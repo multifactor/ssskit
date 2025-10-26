@@ -2,7 +2,7 @@
 //!
 //! Usage example (std):
 //! ```
-//! use gf256sss::{ SecretSharing, Share };
+//! use ssskit::{ SecretSharing, Share };
 //!
 //! # const POLY: u16 = 0x11d_u16;
 //! // Set a minimum threshold of 10 shares
@@ -21,7 +21,7 @@
 //!
 //! Usage example (no std):
 //! ```
-//! use gf256sss::{ SecretSharing, Share };
+//! use ssskit::{ SecretSharing, Share };
 //! use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
 //!
 //! # const POLY: u16 = 0x11d_u16;
@@ -56,7 +56,7 @@ pub use share::Share;
 ///
 /// Usage example:
 /// ```
-/// # use gf256sss::{ SecretSharing, Share };
+/// # use ssskit::{ SecretSharing, Share };
 /// # const POLY: u16 = 0x11d_u16;
 /// // Set a minimum threshold of 10 shares
 /// let sss = SecretSharing::<POLY>(10);
@@ -83,7 +83,7 @@ impl<const POLY: u16> SecretSharing<POLY> {
     ///
     /// Example:
     /// ```
-    /// # use gf256sss::{ SecretSharing, Share };
+    /// # use ssskit::{ SecretSharing, Share };
     /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sss = SecretSharing::<POLY>(3);
@@ -111,7 +111,7 @@ impl<const POLY: u16> SecretSharing<POLY> {
     ///
     /// Example:
     /// ```
-    /// # use gf256sss::{ SecretSharing, Share };
+    /// # use ssskit::{ SecretSharing, Share };
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sss = SecretSharing::<POLY>(3);
     /// // Obtain an iterator over the shares for secret [1, 2]
@@ -130,7 +130,7 @@ impl<const POLY: u16> SecretSharing<POLY> {
     ///
     /// Example:
     /// ```
-    /// # use gf256sss::{ SecretSharing, Share };
+    /// # use ssskit::{ SecretSharing, Share };
     /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sss = SecretSharing::<POLY>(3);
@@ -180,7 +180,7 @@ impl<const POLY: u16> SecretSharing<POLY> {
     ///
     /// Example:
     /// ```
-    /// # use gf256sss::{ SecretSharing, Share };
+    /// # use ssskit::{ SecretSharing, Share };
     /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sss = SecretSharing::<POLY>(2);

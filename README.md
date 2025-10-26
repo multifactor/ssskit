@@ -1,8 +1,8 @@
-# GF256SSS
+# SSSKit
 
-[![Rust](https://github.com/multifactor/gf256sss/workflows/Rust/badge.svg?branch=master)](https://github.com/multifactor/gf256sss/actions)
-[![Crates](https://img.shields.io/crates/v/gf256sss.svg)](https://crates.io/crates/gf256sss)
-[![Docs](https://docs.rs/gf256sss/badge.svg)](https://docs.rs/gf256sss)
+[![Rust](https://github.com/multifactor/ssskit/workflows/Rust/badge.svg?branch=master)](https://github.com/multifactor/ssskit/actions)
+[![Crates](https://img.shields.io/crates/v/ssskit.svg)](https://crates.io/crates/ssskit)
+[![Docs](https://docs.rs/ssskit/badge.svg)](https://docs.rs/ssskit)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
 
 Fast, small, generic and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate
@@ -11,7 +11,7 @@ Fast, small, generic and secure [Shamir's Secret Sharing](https://en.wikipedia.o
 > This repository is a fork of [c0dearm/sharks](https://github.com/c0dearm/sharks), but will be actively developed and maintained by Multifactor.
 
 Documentation:
-- [API reference (docs.rs)](https://docs.rs/gf256sss)
+- [API reference (docs.rs)](https://docs.rs/ssskit)
 
 ## Usage
 
@@ -19,17 +19,17 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-gf256sss = "0.1"
+ssskit = "0.1"
 ```
 
 If your environment doesn't support `std`:
 
 ```toml
 [dependencies]
-gf256sss = { version = "0.1", default-features = false }
+ssskit = { version = "0.1", default-features = false }
 ```
 
-To get started using gf256sss, see the [Rust docs](https://docs.rs/gf256sss)
+To get started using ssskit, see the [Rust docs](https://docs.rs/ssskit)
 
 ## Features
 
@@ -68,7 +68,7 @@ You can run them with `cargo test` and `cargo bench`.
 
 # Contributing
 
-If you find a vulnerability, bug or would like a new feature, [open a new issue](https://github.com/multifactor/gf256sss/issues/new).
+If you find a vulnerability, bug or would like a new feature, [open a new issue](https://github.com/multifactor/ssskit/issues/new).
 
 To introduce your changes into the codebase, submit a Pull Request.
 
@@ -76,7 +76,7 @@ Many thanks!
 
 # License
 
-gf256sss is distributed under the terms of both the MIT license and the
+ssskit is distributed under the terms of both the MIT license and the
 Apache License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.

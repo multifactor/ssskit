@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use gf256sss::Share;
+use ssskit::Share;
 
 const POLY: u16 = 0x11d_u16;
 fuzz_target!(|share: Share<POLY>| {

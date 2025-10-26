@@ -12,7 +12,7 @@ use zeroize::Zeroize;
 ///
 /// Usage example:
 /// ```
-/// use gf256sss::{SecretSharing, Share};
+/// use ssskit::{SecretSharing, Share};
 /// use core::convert::TryFrom;
 /// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
 /// # fn send_to_printer(_: Vec<u8>) {}
