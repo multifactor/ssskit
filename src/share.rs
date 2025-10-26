@@ -12,16 +12,17 @@ use zeroize::Zeroize;
 ///
 /// Usage example:
 /// ```
-/// use sharks::{Sharks, Share};
+/// use ssskit::{SecretSharing, Share};
 /// use core::convert::TryFrom;
-/// # use rand_chacha::rand_core::SeedableRng;
+/// # use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
 /// # fn send_to_printer(_: Vec<u8>) {}
 /// # fn ask_shares() -> Vec<Vec<u8>> {vec![vec![1, 2], vec![2, 3], vec![3, 4]]}
 ///
 /// // Transmit the share bytes to a printer
-/// let sharks = Sharks(3);
+/// # const POLY: u16 = 0x11d_u16;
+/// let sss = SecretSharing::<POLY>(3);
 /// let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-/// let dealer = sharks.dealer_rng(&[1, 2, 3], &mut rng);
+/// let dealer = sss.dealer_rng::<ChaCha8Rng>(&[1, 2, 3], &mut rng);
 ///
 /// // Get 5 shares and print paper keys
 /// for s in dealer.take(5) {
@@ -30,20 +31,20 @@ use zeroize::Zeroize;
 ///
 /// // Get share bytes from an external source and recover secret
 /// let shares_bytes: Vec<Vec<u8>> = ask_shares();
-/// let shares: Vec<Share> = shares_bytes.iter().map(|s| Share::try_from(s.as_slice()).unwrap()).collect();
-/// let secret = sharks.recover(&shares).unwrap();
+/// let shares: Vec<Share<POLY>> = shares_bytes.iter().map(|s| Share::<POLY>::try_from(s.as_slice()).unwrap()).collect();
+/// let secret = sss.recover(&shares).unwrap();
 #[derive(Clone)]
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary, Debug))]
 #[cfg_attr(feature = "zeroize_memory", derive(Zeroize))]
 #[cfg_attr(feature = "zeroize_memory", zeroize(drop))]
-pub struct Share {
-    pub x: GF256,
-    pub y: Vec<GF256>,
+pub struct Share<const POLY: u16> {
+    pub x: GF256<POLY>,
+    pub y: Vec<GF256<POLY>>,
 }
 
 /// Obtains a byte vector from a `Share` instance
-impl From<&Share> for Vec<u8> {
-    fn from(s: &Share) -> Vec<u8> {
+impl<const POLY: u16> From<&Share<POLY>> for Vec<u8> {
+    fn from(s: &Share<POLY>) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(s.y.len() + 1);
         bytes.push(s.x.0);
         bytes.extend(s.y.iter().map(|p| p.0));
@@ -52,10 +53,10 @@ impl From<&Share> for Vec<u8> {
 }
 
 /// Obtains a `Share` instance from a byte slice
-impl core::convert::TryFrom<&[u8]> for Share {
+impl<const POLY: u16> core::convert::TryFrom<&[u8]> for Share<POLY> {
     type Error = &'static str;
 
-    fn try_from(s: &[u8]) -> Result<Share, Self::Error> {
+    fn try_from(s: &[u8]) -> Result<Share<POLY>, Self::Error> {
         if s.len() < 2 {
             Err("A Share must be at least 2 bytes long")
         } else {
@@ -71,10 +72,11 @@ mod tests {
     use super::{Share, GF256};
     use alloc::{vec, vec::Vec};
     use core::convert::TryFrom;
+    const POLY: u16 = 0x11d_u16;
 
     #[test]
     fn vec_from_share_works() {
-        let share = Share {
+        let share = Share::<POLY> {
             x: GF256(1),
             y: vec![GF256(2), GF256(3)],
         };
@@ -85,7 +87,7 @@ mod tests {
     #[test]
     fn share_from_u8_slice_works() {
         let bytes = [1, 2, 3];
-        let share = Share::try_from(&bytes[..]).unwrap();
+        let share = Share::<POLY>::try_from(&bytes[..]).unwrap();
         assert_eq!(share.x, GF256(1));
         assert_eq!(share.y, vec![GF256(2), GF256(3)]);
     }

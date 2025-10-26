@@ -1,19 +1,23 @@
 [package]
-name = "sharks"
-version = "0.5.0"
-authors = ["Aitor Ruano <codearm@pm.me>"]
+name = "ssskit"
+version = "0.1.0"
+authors = [
+  "Multifactor, Inc. <https://multifactor.com>",
+  "Sambhav Dusad <https://lonerapier.me>",
+]
 description = "Fast, small and secure Shamir's Secret Sharing library crate"
-homepage = "https://github.com/c0dearm/sharks"
-repository = "https://github.com/c0dearm/sharks"
+homepage = "https://github.com/multifactor/ssskit"
+repository = "https://github.com/multifactor/ssskit"
+documentation = "https://docs.rs/ssskit"
 readme = "README.md"
 keywords = ["shamir", "secret", "sharing", "share", "crypto"]
 categories = ["algorithms", "cryptography", "mathematics"]
-license = "MIT/Apache-2.0"
-edition = "2018"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+include = ["src/**", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 
 [badges]
 maintenance = { status = "actively-developed" }
-codecov = { repository = "c0dearm/sharks" }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
@@ -23,15 +27,40 @@ fuzzing = ["std", "arbitrary"]
 zeroize_memory = ["zeroize"]
 
 [dependencies]
-rand = { version = "0.8", default-features = false }
-hashbrown = "0.9"
-arbitrary = { version = "0.4.7", features = ["derive"], optional = true }
-zeroize = { version = "1.2.0", features = ["zeroize_derive"], optional = true }
+rand = { version = "0.8.5", default-features = false }
+hashbrown = { version = "0.16", default-features = false, features = [
+  "default-hasher",
+] }
+arbitrary = { version = "1.4.2", default-features = false, features = [
+  "derive",
+], optional = true }
+zeroize = { version = "1.8.2", default-features = false, features = [
+  "alloc",
+  "zeroize_derive",
+], optional = true }
 
 [dev-dependencies]
-criterion = "0.3"
-rand_chacha = "0.3"
+criterion = "0.7.0"
+rand_chacha = "0.3.1"
+rstest = "0.26.1"
 
 [[bench]]
 name = "benchmarks"
 harness = false
+
+[package.metadata.docs.rs]
+features = ["std"]
+all-features = false
+rustdoc-args = ["--cfg", "docsrs"]
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+incremental = false
+debug = 1
+strip = true
+
+[profile.bench]
+inherits = "release"
+debug = 1
+strip = false

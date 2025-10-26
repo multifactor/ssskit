@@ -2,15 +2,16 @@
 use libfuzzer_sys::fuzz_target;
 
 use arbitrary::Arbitrary;
-use sharks::{Share, Sharks};
+use ssskit::{SecretSharing, Share};
 
+const POLY: u16 = 0x11d_u16;
 #[derive(Debug, Arbitrary)]
 struct Parameters {
     pub threshold: u8,
-    pub shares: Vec<Share>,
+    pub shares: Vec<Share<POLY>>,
 }
 
 fuzz_target!(|params: Parameters| {
-    let sharks = Sharks(params.threshold);
-    let _secret = sharks.recover(&params.shares);
+    let sss = SecretSharing::<POLY>(params.threshold);
+    let _secret = sss.recover(&params.shares);
 });
