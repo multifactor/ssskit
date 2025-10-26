@@ -1,6 +1,6 @@
 [package]
 name = "ssskit"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   "Multifactor, Inc. <https://multifactor.com>",
   "Sambhav Dusad <https://lonerapier.me>",
