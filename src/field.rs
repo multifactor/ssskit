@@ -1,5 +1,5 @@
-// Basic operations overrided for the Galois Field 256 (2**8)
-// Implements the operations over general irreducible polynomials.
+//! Basic operations overrided for the Galois Field 256 (2**8)
+//! Implements the operations over general irreducible polynomials.
 
 use core::iter::{Product, Sum};
 use core::ops::{Add, Div, Mul, Sub};
@@ -11,6 +11,10 @@ use arbitrary::Arbitrary;
 use zeroize::Zeroize;
 
 #[inline]
+// GF(2^8) multiplication via Russian peasant method with polynomial reduction.
+// `poly` encodes the irreducible degree-8 polynomial (e.g., 0x11D for x^8 + x^4 + x^3 + x + 1).
+// When the x^8 term would appear (carry), we reduce by XOR-ing with `poly` after the left shift.
+// Returns the canonical byte representative in GF(256).
 const fn gf256_mul(a: u8, b: u8, poly: u16) -> u8 {
     let mut result = 0u16;
     let mut a_val = a as u16;
@@ -32,6 +36,8 @@ const fn gf256_mul(a: u8, b: u8, poly: u16) -> u8 {
 }
 
 #[inline]
+// Constant-time-ish binary exponentiation in GF(2^8).
+// Used by generator checks and table construction.
 const fn gf256_pow(base: u8, exponent: u8, poly: u16) -> u8 {
     let mut result = 1u8;
     let mut base_val = base;
@@ -47,12 +53,19 @@ const fn gf256_pow(base: u8, exponent: u8, poly: u16) -> u8 {
     result
 }
 
+/// Known primitive degree-8 polynomials over GF(2).
+/// Any `POLY` must be one of these to give a field with multiplicative group of order 255.
+///
+/// References:
+/// - [Primitive elements and irreducible polynomials of GF(256)](https://codyplanteen.com/assets/rs/gf256_prim.pdf)
 pub const PRIMITIVE_POLYS: &[u16] = &[
-    0x11B, 0x11D, 0x12B, 0x12D, 0x14D, 0x15F, 0x163, 0x165, 0x169, 0x171, 0x187, 0x1A9, 0x1C3,
-    0x1CF, 0x1E7, 0x1F5,
+    0x11B, 0x11D, 0x12B, 0x12D, 0x139, 0x13F, 0x14D, 0x15F, 0x163, 0x165, 0x169, 0x171, 0x177,
+    0x17B, 0x187, 0x18B, 0x18D, 0x19F, 0x1A3, 0x1A9, 0x1B1, 0x1BD, 0x1C3, 0x1CF, 0x1D7, 0x1DD,
+    0x1E7, 0x1F3, 0x1F5, 0x1F9,
 ];
 
 #[inline]
+/// Simple membership check for compile time primitive polynomial check.
 const fn is_primitive(poly: u16) -> bool {
     let mut i = 0;
 
@@ -65,12 +78,16 @@ const fn is_primitive(poly: u16) -> bool {
     false
 }
 
+/// Field element type parametrized by the irreducible polynomial at the type level.
+/// Different `POLY` values produce distinct, non-interoperable types.
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 #[cfg_attr(feature = "zeroize_memory", derive(Zeroize))]
 #[cfg_attr(feature = "zeroize_memory", zeroize(drop))]
 pub struct GF256<const POLY: u16>(pub u8);
 
+/// Precomputed tables for fast log/exp arithmetic.
+/// Note: `exp` is duplicated to length 512 so additions/subtractions of logs can index without explicit mod 255.
 pub struct Tables<const POLY: u16> {
     pub log: [u8; 256],
     pub exp: [u8; 512],
@@ -83,6 +100,7 @@ impl<const POLY: u16> Default for Tables<POLY> {
 }
 
 #[inline]
+/// Checks if `x` has multiplicative order 255 by testing x^(255/p) != 1 for all prime factors p of 255 (=3,5,17).
 const fn is_primitive_element<const POLY: u16>(x: u8) -> bool {
     const FACTORS: [u8; 3] = [3, 5, 17];
 
@@ -97,6 +115,7 @@ const fn is_primitive_element<const POLY: u16>(x: u8) -> bool {
 }
 
 #[inline]
+/// Linear search for a primitive element (generator) of GF(256) under `POLY`.
 const fn find_generator<const POLY: u16>() -> u8 {
     let mut i = 1u16;
     while i <= 255 {
@@ -109,6 +128,7 @@ const fn find_generator<const POLY: u16>() -> u8 {
 }
 
 impl<const POLY: u16> Tables<POLY> {
+    /// Builds log/exp tables at compile time; panics at compile time if `POLY` is not primitive.
     pub const fn new() -> Self {
         assert!(is_primitive(POLY), "POLY must be primitive");
 
@@ -127,6 +147,7 @@ impl<const POLY: u16> Tables<POLY> {
         }
 
         let mut j = 255usize;
+        // Duplicate exp table to avoid modulus: exp[i + 255] == exp[i].
         while j < 512 {
             exp[j] = exp[j - 255];
             j += 1;
@@ -137,7 +158,9 @@ impl<const POLY: u16> Tables<POLY> {
 }
 
 impl<const POLY: u16> GF256<POLY> {
+    /// Compile-time assertion tying this type to a primitive polynomial.
     const POLY_CHECK: () = assert!(is_primitive(POLY), "POLY must be primitive");
+    /// Precompute tables once per concrete `POLY` type.
     pub const TABLES: Tables<POLY> = Tables::new();
 
     pub fn add(self, other: Self) -> Self {
@@ -153,23 +176,28 @@ impl<const POLY: u16> GF256<POLY> {
     }
 
     pub fn mul(self, other: Self) -> Self {
+        // Map to log space; zeros are handled explicitly to avoid using log(0).
         let log_x = Self::TABLES.log[self.0 as usize] as usize;
         let log_y = Self::TABLES.log[other.0 as usize] as usize;
 
         if self.0 == 0 || other.0 == 0 {
             Self(0)
         } else {
+            // Addition in log space corresponds to multiplication in the field.
             Self(Self::TABLES.exp[log_x + log_y])
         }
     }
 
     pub fn div(self, other: Self) -> Self {
+        // Map to log space; requires non-zero divisor.
         let log_x = Self::TABLES.log[self.0 as usize] as usize;
         let log_y = Self::TABLES.log[other.0 as usize] as usize;
 
         if self.0 == 0 {
             Self(0)
         } else {
+            // Subtraction in log space corresponds to division; +255 implements wrap-around.
+            // Precondition: `other` must be non-zero; dividing by zero is undefined for this API.
             Self(Self::TABLES.exp[log_x + 255 - log_y])
         }
     }
@@ -466,17 +494,31 @@ mod tests {
         (0x11D, ops_poly_11d),
         (0x12B, ops_poly_12b),
         (0x12D, ops_poly_12d),
+        (0x139, ops_poly_139),
+        (0x13F, ops_poly_13f),
         (0x14D, ops_poly_14d),
         (0x15F, ops_poly_15f),
         (0x163, ops_poly_163),
         (0x165, ops_poly_165),
         (0x169, ops_poly_169),
         (0x171, ops_poly_171),
+        (0x177, ops_poly_177),
+        (0x17B, ops_poly_17b),
         (0x187, ops_poly_187),
+        (0x18B, ops_poly_18b),
+        (0x18D, ops_poly_18d),
+        (0x19F, ops_poly_19f),
+        (0x1A3, ops_poly_1a3),
         (0x1A9, ops_poly_1a9),
+        (0x1B1, ops_poly_1b1),
+        (0x1BD, ops_poly_1bd),
         (0x1C3, ops_poly_1c3),
         (0x1CF, ops_poly_1cf),
+        (0x1D7, ops_poly_1d7),
+        (0x1DD, ops_poly_1dd),
         (0x1E7, ops_poly_1e7),
+        (0x1F3, ops_poly_1f3),
         (0x1F5, ops_poly_1f5),
+        (0x1F9, ops_poly_1f9),
     );
 }

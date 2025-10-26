@@ -1,11 +1,13 @@
 //! Fast, small and secure [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing) library crate
 //!
-//! Usage example (std):
+//! # Usage
+//! ## (std)
+//!
 //! ```
 //! use ssskit::{ SecretSharing, Share };
 //!
 //! # const POLY: u16 = 0x11d_u16;
-//! // Set a minimum threshold of 10 shares
+//! // Set a minimum threshold of 10 shares for an irreducible polynomial POLY
 //! let sss = SecretSharing::<POLY>(10);
 //! // Obtain an iterator over the shares for secret [1, 2, 3, 4]
 //! # #[cfg(feature = "std")]
@@ -19,7 +21,8 @@
 //! # }
 //! ```
 //!
-//! Usage example (no std):
+//! ## (no std)
+//!
 //! ```
 //! use ssskit::{ SecretSharing, Share };
 //! use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
@@ -36,6 +39,15 @@
 //! let secret = sss.recover(shares.as_slice()).unwrap();
 //! assert_eq!(secret, vec![1, 2, 3, 4]);
 //! ```
+//!
+//! # Irreducible Polynomials
+//!
+//! This crate supports all 30 degree-8 irreducible polynomials over GF(2).
+//! See the exported list [`PRIMITIVE_POLYS`] (defined in `field.rs`).
+//!
+//! Commonly used polynomials:
+//! - 0x11B — used in AES (Rijndael)
+//! - 0x11D — commonly used in Reed–Solomon (e.g., QR codes)
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod field;

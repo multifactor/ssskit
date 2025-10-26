@@ -96,8 +96,8 @@ pub fn reshare<const POLY: u16>(shares: &[Share<POLY>], index: usize) -> Share<P
     }
 }
 
-// Generates `k` polynomial coefficients, being the last one `s` and the others randomly generated between `[1, 255]`.
-// Coefficient degrees go from higher to lower in the returned vector order.
+/// Generates `k` polynomial coefficients, being the last one `s` and the others randomly generated between `[1, 255]`.
+/// Coefficient degrees go from higher to lower in the returned vector order.
 pub fn random_polynomial<R: rand::Rng, const POLY: u16>(
     s: GF256<POLY>,
     k: u8,
