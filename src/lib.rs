@@ -262,21 +262,21 @@ mod tests {
     use super::{SecretSharing, Share};
     use alloc::{vec, vec::Vec};
 
-    const POLY: u16 = 0x11d_u16;
+    const POLY: u16 = 0x11b_u16;
 
     impl<const POLY: u16> SecretSharing<POLY> {
-        #[cfg(not(feature = "std"))]
+        // #[cfg(not(feature = "std"))]
         fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
-            use rand_chacha::{rand_core::SeedableRng, ChaCha8Rng};
+            use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 
-            let mut rng = ChaCha8Rng::from_seed([0x90; 32]);
+            let mut rng = ChaCha20Rng::from_seed([10; 32]);
             self.dealer_rng(secret, &mut rng)
         }
 
-        #[cfg(feature = "std")]
-        fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
-            self.dealer(secret)
-        }
+        // #[cfg(feature = "std")]
+        // fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
+        //     self.dealer(secret)
+        // }
     }
 
     #[test]
@@ -354,5 +354,24 @@ mod tests {
         let recovered_shares =
             sss.recover_shares([Some(&shares[0]), None, None, Some(&shares[3])], 4);
         assert!(recovered_shares.is_err());
+    }
+
+    #[test]
+    fn test_k_of_n() {
+        let sharks = SecretSharing::<POLY>(2);
+        let shares: Vec<Share<POLY>> = sharks.make_shares(&[18, 52, 86, 120]).take(4).collect();
+
+        let recovered_shares = sharks
+            .recover_shares(
+                [Some(&shares[0]), Some(&shares[1]), Some(&shares[2]), None],
+                4,
+            )
+            .unwrap();
+        assert_eq!(recovered_shares.len(), 4);
+
+        for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
+            assert_eq!(recovered_share.x, share.x);
+            assert_eq!(recovered_share.y, share.y);
+        }
     }
 }
