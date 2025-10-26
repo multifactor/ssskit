@@ -1,14 +1,14 @@
 [package]
-name = "gf256sss"
+name = "ssskit"
 version = "0.1.0"
 authors = [
   "Multifactor, Inc. <https://multifactor.com>",
   "Sambhav Dusad <https://lonerapier.me>",
 ]
 description = "Fast, small and secure Shamir's Secret Sharing library crate"
-homepage = "https://github.com/multifactor/gf256sss"
-repository = "https://github.com/multifactor/gf256sss"
-documentation = "https://docs.rs/gf256sss"
+homepage = "https://github.com/multifactor/ssskit"
+repository = "https://github.com/multifactor/ssskit"
+documentation = "https://docs.rs/ssskit"
 readme = "README.md"
 keywords = ["shamir", "secret", "sharing", "share", "crypto"]
 categories = ["algorithms", "cryptography", "mathematics"]
@@ -31,12 +31,17 @@ rand = { version = "0.8.5", default-features = false }
 hashbrown = { version = "0.16", default-features = false, features = [
   "default-hasher",
 ] }
-arbitrary = { version = "1.4", features = ["derive"], optional = true }
-zeroize = { version = "1.2.0", features = ["zeroize_derive"], optional = true }
+arbitrary = { version = "1.4.2", default-features = false, features = [
+  "derive",
+], optional = true }
+zeroize = { version = "1.8.2", default-features = false, features = [
+  "alloc",
+  "zeroize_derive",
+], optional = true }
 
 [dev-dependencies]
-criterion = "0.7"
-rand_chacha = "0.3"
+criterion = "0.7.0"
+rand_chacha = "0.3.1"
 rstest = "0.26.1"
 
 [[bench]]
@@ -47,3 +52,15 @@ harness = false
 features = ["std"]
 all-features = false
 rustdoc-args = ["--cfg", "docsrs"]
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+incremental = false
+debug = 1
+strip = true
+
+[profile.bench]
+inherits = "release"
+debug = 1
+strip = false
