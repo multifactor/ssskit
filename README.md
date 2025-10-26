@@ -1,6 +1,6 @@
 # SSSKit
 
-[![Rust](https://github.com/multifactor/ssskit/workflows/Rust/badge.svg?branch=master)](https://github.com/multifactor/ssskit/actions)
+[![Rust](https://github.com/multifactor/ssskit/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/multifactor/ssskit/actions/workflows/rust.yml)
 [![Crates](https://img.shields.io/crates/v/ssskit.svg)](https://crates.io/crates/ssskit)
 [![Docs](https://docs.rs/ssskit/badge.svg)](https://docs.rs/ssskit)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
