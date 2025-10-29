@@ -159,14 +159,20 @@ impl<const POLY: u16> SecretSharing<POLY> {
     /// assert!(secret.is_err());
     pub fn recover<'a, T>(&self, shares: T) -> Result<Vec<u8>, &str>
     where
-        T: IntoIterator<Item = &'a Share<POLY>>,
-        T::IntoIter: Iterator<Item = &'a Share<POLY>>,
+        T: IntoIterator<Item = &'a Option<Share<POLY>>>,
+        T::IntoIter: Iterator<Item = &'a Option<Share<POLY>>>,
     {
         let mut share_length: Option<usize> = None;
-        let mut keys: HashSet<u8> = HashSet::new();
-        let mut values: Vec<Share<POLY>> = Vec::new();
+        let mut keys: HashSet<Vec<u8>> = HashSet::new();
+        let mut values: Vec<(GF256<POLY>, Share<POLY>)> = Vec::new();
 
-        for share in shares.into_iter() {
+        for (i, share) in shares.into_iter().enumerate() {
+            if share.is_none() {
+                continue;
+            }
+
+            let share = share.as_ref().unwrap();
+
             if share_length.is_none() {
                 share_length = Some(share.y.len());
             }
@@ -174,15 +180,15 @@ impl<const POLY: u16> SecretSharing<POLY> {
             if Some(share.y.len()) != share_length {
                 return Err("All shares must have the same length");
             } else {
-                keys.insert(share.x.0);
-                values.push(share.clone());
+                keys.insert(Vec::from(share));
+                values.push((GF256(i as u8 + 1), share.clone()));
             }
         }
 
         if keys.is_empty() || (keys.len() < self.0 as usize) {
             Err("Not enough shares to recover original secret")
         } else {
-            Ok(math::interpolate(values.as_slice()))
+            Ok(math::interpolate(&values))
         }
     }
 
@@ -217,11 +223,11 @@ impl<const POLY: u16> SecretSharing<POLY> {
         T::IntoIter: Iterator<Item = Option<&'a Share<POLY>>>,
     {
         let mut share_length: Option<usize> = None;
-        let mut keys: HashSet<u8> = HashSet::new();
-        let mut values: Vec<Share<POLY>> = Vec::new();
+        let mut keys: HashSet<Vec<u8>> = HashSet::new();
+        let mut values: Vec<(GF256<POLY>, Share<POLY>)> = Vec::new();
 
         let mut count = 0;
-        for share in shares.into_iter() {
+        for (i, share) in shares.into_iter().enumerate() {
             if share.is_none() {
                 count += 1;
                 continue;
@@ -236,8 +242,8 @@ impl<const POLY: u16> SecretSharing<POLY> {
             if Some(share.y.len()) != share_length {
                 return Err("All shares must have the same length");
             } else {
-                keys.insert(share.x.0);
-                values.push(share.clone());
+                keys.insert(Vec::from(share));
+                values.push((GF256(i as u8 + 1), share.clone()));
                 count += 1;
             }
         }
@@ -250,7 +256,12 @@ impl<const POLY: u16> SecretSharing<POLY> {
             Err("Not enough shares to recover original shares")
         } else if self.0 == 1 {
             // if threshold is 1, return the shares as is n times
-            Ok(values.iter().cloned().cycle().take(n).collect())
+            Ok(values
+                .iter()
+                .map(|(_, share)| share.clone())
+                .cycle()
+                .take(n)
+                .collect())
         } else {
             Ok((1..=n).map(|i| math::reshare(&values, i)).collect())
         }
@@ -283,6 +294,7 @@ mod tests {
     fn test_insufficient_shares_err() {
         let sss = SecretSharing::<POLY>(255);
         let shares: Vec<Share<POLY>> = sss.make_shares(&[1]).take(254).collect();
+        let shares: Vec<Option<Share<POLY>>> = shares.iter().map(|s| Some(s.clone())).collect();
         let secret = sss.recover(&shares);
         assert!(secret.is_err());
     }
@@ -292,9 +304,10 @@ mod tests {
         let sss = SecretSharing::<POLY>(255);
         let mut shares: Vec<Share<POLY>> = sss.make_shares(&[1]).take(255).collect();
         shares[1] = Share {
-            x: shares[0].x.clone(),
+            // x: shares[0].x.clone(),
             y: shares[0].y.clone(),
         };
+        let shares: Vec<Option<Share<POLY>>> = shares.iter().map(|s| Some(s.clone())).collect();
         let secret = sss.recover(&shares);
         assert!(secret.is_err());
     }
@@ -303,6 +316,7 @@ mod tests {
     fn test_integration_works() {
         let sss = SecretSharing::<POLY>(255);
         let shares: Vec<Share<POLY>> = sss.make_shares(&[1, 2, 3, 4]).take(255).collect();
+        let shares: Vec<Option<Share<POLY>>> = shares.iter().map(|s| Some(s.clone())).collect();
         let secret = sss.recover(&shares).unwrap();
         assert_eq!(secret, vec![1, 2, 3, 4]);
     }
@@ -321,7 +335,7 @@ mod tests {
         assert_eq!(recovered_shares.len(), 4);
 
         for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
-            assert_eq!(recovered_share.x, share.x);
+            // assert_eq!(recovered_share.x, share.x);
             assert_eq!(recovered_share.y, share.y);
         }
 
@@ -334,7 +348,7 @@ mod tests {
         assert_eq!(recovered_shares.len(), 4);
 
         for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
-            assert_eq!(recovered_share.x, share.x);
+            // assert_eq!(recovered_share.x, share.x);
             assert_eq!(recovered_share.y, share.y);
         }
 
@@ -347,7 +361,7 @@ mod tests {
         assert_eq!(recovered_shares.len(), 4);
 
         for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
-            assert_eq!(recovered_share.x, share.x);
+            // assert_eq!(recovered_share.x, share.x);
             assert_eq!(recovered_share.y, share.y);
         }
 
@@ -370,7 +384,7 @@ mod tests {
         assert_eq!(recovered_shares.len(), 4);
 
         for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
-            assert_eq!(recovered_share.x, share.x);
+            // assert_eq!(recovered_share.x, share.x);
             assert_eq!(recovered_share.y, share.y);
         }
     }

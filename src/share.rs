@@ -38,15 +38,15 @@ use zeroize::Zeroize;
 #[cfg_attr(feature = "zeroize_memory", derive(Zeroize))]
 #[cfg_attr(feature = "zeroize_memory", zeroize(drop))]
 pub struct Share<const POLY: u16> {
-    pub x: GF256<POLY>,
+    // pub x: GF256<POLY>,
     pub y: Vec<GF256<POLY>>,
 }
 
 /// Obtains a byte vector from a `Share` instance
 impl<const POLY: u16> From<&Share<POLY>> for Vec<u8> {
     fn from(s: &Share<POLY>) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(s.y.len() + 1);
-        bytes.push(s.x.0);
+        let mut bytes = Vec::with_capacity(s.y.len());
+        // bytes.push(s.x.0);
         bytes.extend(s.y.iter().map(|p| p.0));
         bytes
     }
@@ -60,9 +60,9 @@ impl<const POLY: u16> core::convert::TryFrom<&[u8]> for Share<POLY> {
         if s.len() < 2 {
             Err("A Share must be at least 2 bytes long")
         } else {
-            let x = GF256(s[0]);
-            let y = s[1..].iter().map(|p| GF256(*p)).collect();
-            Ok(Share { x, y })
+            // let x = GF256(s[0]);
+            let y = s.iter().map(|p| GF256(*p)).collect();
+            Ok(Share { y })
         }
     }
 }
@@ -77,18 +77,18 @@ mod tests {
     #[test]
     fn vec_from_share_works() {
         let share = Share::<POLY> {
-            x: GF256(1),
+            // x: GF256(1),
             y: vec![GF256(2), GF256(3)],
         };
         let bytes = Vec::from(&share);
-        assert_eq!(bytes, vec![1, 2, 3]);
+        assert_eq!(bytes, vec![2, 3]);
     }
 
     #[test]
     fn share_from_u8_slice_works() {
         let bytes = [1, 2, 3];
         let share = Share::<POLY>::try_from(&bytes[..]).unwrap();
-        assert_eq!(share.x, GF256(1));
-        assert_eq!(share.y, vec![GF256(2), GF256(3)]);
+        // assert_eq!(share.x, GF256(1));
+        assert_eq!(share.y, vec![GF256(1), GF256(2), GF256(3)]);
     }
 }

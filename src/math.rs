@@ -12,18 +12,18 @@ use super::share::Share;
 // The expected `shares` argument format is the same as the output by the `get_evaluator´ function.
 // Where each (key, value) pair corresponds to one share, where the key is the `x` and the value is a vector of `y`,
 // where each element corresponds to one of the secret's byte chunks.
-pub fn interpolate<const POLY: u16>(shares: &[Share<POLY>]) -> Vec<u8> {
-    (0..shares[0].y.len())
+pub fn interpolate<const POLY: u16>(shares: &[(GF256<POLY>, Share<POLY>)]) -> Vec<u8> {
+    (0..shares[0].1.y.len())
         .map(|s| {
             shares
                 .iter()
                 .map(|s_i| {
                     shares
                         .iter()
-                        .filter(|s_j| s_j.x != s_i.x)
-                        .map(|s_j| s_j.x.clone() / (s_j.x.clone() - s_i.x.clone()))
+                        .filter(|s_j| s_j.0 != s_i.0)
+                        .map(|s_j| s_j.0.clone() / (s_j.0.clone() - s_i.0.clone()))
                         .product::<GF256<POLY>>()
-                        * s_i.y[s].clone()
+                        * s_i.1.y[s].clone()
                 })
                 .sum::<GF256<POLY>>()
                 .0
@@ -66,22 +66,25 @@ pub fn interpolate_polynomial<const POLY: u16>(
 }
 
 /// Resharing a share at a given index.
-pub fn reshare<const POLY: u16>(shares: &[Share<POLY>], index: usize) -> Share<POLY> {
+pub fn reshare<const POLY: u16>(
+    shares: &[(GF256<POLY>, Share<POLY>)],
+    index: usize,
+) -> Share<POLY> {
     // assert that atleast 2 shares exist
     assert!(
         shares.len() >= 2 && shares.len() <= 255,
         "atleast 2 shares and atmost 255 shares are required"
     );
 
-    let secret_length = shares[0].y.len();
+    let secret_length = shares[0].1.y.len();
 
     let mut new_secret = Vec::new();
     for i in 0..secret_length {
         let mut x_values = Vec::new();
         let mut y_values = Vec::new();
         for share in shares {
-            x_values.push(share.x.clone());
-            y_values.push(share.y[i].clone());
+            x_values.push(share.0.clone());
+            y_values.push(share.1.y[i].clone());
         }
         new_secret.push(interpolate_polynomial(
             &x_values,
@@ -91,7 +94,7 @@ pub fn reshare<const POLY: u16>(shares: &[Share<POLY>], index: usize) -> Share<P
     }
 
     Share {
-        x: GF256(index as u8),
+        // x: GF256(index as u8),
         y: new_secret,
     }
 }
@@ -128,7 +131,7 @@ pub fn get_evaluator<const POLY: u16>(
     polys: Vec<Vec<GF256<POLY>>>,
 ) -> impl Iterator<Item = Share<POLY>> {
     (1..=u8::MAX).map(GF256).map(move |x| Share {
-        x: x.clone(),
+        // x: x.clone(),
         y: polys
             .iter()
             .map(|p| {
@@ -161,11 +164,8 @@ mod tests {
     #[test]
     fn evaluator_works() {
         let iter = get_evaluator::<POLY>(vec![vec![GF256(3), GF256(2), GF256(5)]]);
-        let values: Vec<_> = iter.take(2).map(|s| (s.x.clone(), s.y.clone())).collect();
-        assert_eq!(
-            values,
-            vec![(GF256(1), vec![GF256(4)]), (GF256(2), vec![GF256(13)])]
-        );
+        let values: Vec<_> = iter.take(2).map(|s| s.y.clone()).collect();
+        assert_eq!(values, vec![(vec![GF256(4)]), (vec![GF256(13)])]);
     }
 
     #[rstest]
@@ -176,7 +176,11 @@ mod tests {
         let mut rng = rand_chacha::ChaCha8Rng::from_seed(seed);
         let poly = random_polynomial(GF256(185), k as u8, &mut rng);
         let iter = get_evaluator(vec![poly]);
-        let shares: Vec<Share<POLY>> = iter.take(k).collect();
+        let shares: Vec<(GF256<POLY>, Share<POLY>)> = iter
+            .take(k)
+            .enumerate()
+            .map(|(i, s)| (GF256(i as u8 + 1), s))
+            .collect();
         let root = interpolate(&shares);
         assert_eq!(root, vec![185]);
     }
@@ -190,8 +194,12 @@ mod tests {
         let mut rng = rand_chacha::ChaCha8Rng::from_seed(seed);
         let poly = random_polynomial(GF256(185), k as u8, &mut rng);
         let iter = get_evaluator(vec![poly]);
-        let shares: Vec<Share<POLY>> = iter.take(k).collect();
+        let shares: Vec<(GF256<POLY>, Share<POLY>)> = iter
+            .take(k)
+            .enumerate()
+            .map(|(i, s)| (GF256(i as u8 + 1), s))
+            .collect();
         let share = reshare(&shares, index);
-        assert_eq!(share.y, shares[index - 1].y);
+        assert_eq!(share.y, shares[index - 1].1.y);
     }
 }

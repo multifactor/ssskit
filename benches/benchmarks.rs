@@ -21,7 +21,14 @@ fn recover<const POLY: u16>(c: &mut Criterion) {
     let shares = dealer.take(255).collect::<Vec<Share<POLY>>>();
 
     c.bench_function("recover_secret", |b| {
-        b.iter(|| sss.recover(black_box(&shares)))
+        b.iter(|| {
+            sss.recover(black_box(
+                &shares
+                    .iter()
+                    .map(|s| Some(s.clone()))
+                    .collect::<Vec<Option<Share<POLY>>>>(),
+            ))
+        })
     });
 }
 
