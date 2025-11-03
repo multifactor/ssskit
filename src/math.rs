@@ -108,15 +108,12 @@ pub fn random_polynomial<R: rand::Rng, const POLY: u16>(
 ) -> Vec<GF256<POLY>> {
     let k = k as usize;
     let mut poly = Vec::with_capacity(k);
-    // let between = Uniform::new_inclusive(1, 255);
 
-    let mut random_bytes = [0u8; 1];
+    let mut random_bytes = vec![0u8; k as usize - 1];
 
-    for _ in 1..k {
-        // poly.push(GF256(between.sample(rng)));
-        rng.fill(&mut random_bytes);
-        let random_number = random_bytes[0];
-        poly.push(GF256(random_number));
+    rng.fill(random_bytes.as_mut_slice());
+    for random_byte in random_bytes.iter().rev() {
+        poly.push(GF256(*random_byte));
     }
     poly.push(s);
 
