@@ -1,29 +1,28 @@
 // A module which contains necessary algorithms to compute Shamir's shares and recover secrets
 
+use alloc::vec;
 use alloc::vec::Vec;
 
-// use rand::distributions::Distribution;
-// use rand::distributions::Uniform;
-
-use super::field::GF256;
-use super::share::Share;
+use crate::field::GF256;
+use crate::share::Share;
+use crate::share::ShareWithX;
 
 // Finds the [root of the Lagrange polynomial](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing#Computationally_efficient_approach).
 // The expected `shares` argument format is the same as the output by the `get_evaluator´ function.
 // Where each (key, value) pair corresponds to one share, where the key is the `x` and the value is a vector of `y`,
 // where each element corresponds to one of the secret's byte chunks.
-pub fn interpolate<const POLY: u16>(shares: &[(GF256<POLY>, Share<POLY>)]) -> Vec<u8> {
-    (0..shares[0].1.y.len())
+pub fn interpolate<const POLY: u16>(shares: &[ShareWithX<POLY>]) -> Vec<u8> {
+    (0..shares[0].y.len())
         .map(|s| {
             shares
                 .iter()
                 .map(|s_i| {
                     shares
                         .iter()
-                        .filter(|s_j| s_j.0 != s_i.0)
-                        .map(|s_j| s_j.0.clone() / (s_j.0.clone() - s_i.0.clone()))
+                        .filter(|s_j| s_j.x != s_i.x)
+                        .map(|s_j| s_j.x.clone() / (s_j.x.clone() - s_i.x.clone()))
                         .product::<GF256<POLY>>()
-                        * s_i.1.y[s].clone()
+                        * s_i.y[s].clone()
                 })
                 .sum::<GF256<POLY>>()
                 .0
@@ -93,9 +92,16 @@ pub fn reshare<const POLY: u16>(
         ));
     }
 
-    Share {
-        // x: GF256(index as u8),
-        y: new_secret,
+    #[cfg(feature = "share_x")]
+    {
+        Share {
+            x: GF256(index as u8),
+            y: new_secret,
+        }
+    }
+    #[cfg(not(feature = "share_x"))]
+    {
+        Share { y: new_secret }
     }
 }
 
@@ -109,7 +115,7 @@ pub fn random_polynomial<R: rand::Rng, const POLY: u16>(
     let k = k as usize;
     let mut poly = Vec::with_capacity(k);
 
-    let mut random_bytes = vec![0u8; k as usize - 1];
+    let mut random_bytes = vec![0u8; k - 1];
 
     rng.fill(random_bytes.as_mut_slice());
     for random_byte in random_bytes.iter().rev() {
@@ -127,21 +133,28 @@ pub fn random_polynomial<R: rand::Rng, const POLY: u16>(
 pub fn get_evaluator<const POLY: u16>(
     polys: Vec<Vec<GF256<POLY>>>,
 ) -> impl Iterator<Item = Share<POLY>> {
-    (1..=u8::MAX).map(GF256).map(move |x| Share {
-        // x: x.clone(),
-        y: polys
+    (1..=u8::MAX).map(GF256).map(move |x| {
+        let y = polys
             .iter()
             .map(|p| {
                 p.iter()
                     .fold(GF256(0), |acc, c| acc * x.clone() + c.clone())
             })
-            .collect(),
+            .collect();
+        #[cfg(feature = "share_x")]
+        {
+            Share { x: x.clone(), y }
+        }
+        #[cfg(not(feature = "share_x"))]
+        {
+            Share { y }
+        }
     })
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{get_evaluator, interpolate, random_polynomial, reshare, Share, GF256};
+    use super::{get_evaluator, interpolate, random_polynomial, reshare, Share, ShareWithX, GF256};
     use alloc::{vec, vec::Vec};
     use rand_chacha::rand_core::SeedableRng;
     use rstest::rstest;
@@ -173,10 +186,13 @@ mod tests {
         let mut rng = rand_chacha::ChaCha8Rng::from_seed(seed);
         let poly = random_polynomial(GF256(185), k as u8, &mut rng);
         let iter = get_evaluator(vec![poly]);
-        let shares: Vec<(GF256<POLY>, Share<POLY>)> = iter
+        let shares: Vec<ShareWithX<POLY>> = iter
             .take(k)
             .enumerate()
-            .map(|(i, s)| (GF256(i as u8 + 1), s))
+            .map(|(i, s)| ShareWithX {
+                x: GF256(i as u8 + 1),
+                y: s.y.clone(),
+            })
             .collect();
         let root = interpolate(&shares);
         assert_eq!(root, vec![185]);

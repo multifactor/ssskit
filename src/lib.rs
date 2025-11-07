@@ -14,9 +14,12 @@
 //! # {
 //! let dealer = sss.dealer(&[1, 2, 3, 4]);
 //! // Get 10 shares
-//! let shares = dealer.take(10).collect::<Vec<Share<POLY>>>();
+//! let shares = dealer
+//!     .take(10)
+//!     .map(Some)
+//!     .collect::<Vec<Option<Share<POLY>>>>();
 //! // Recover the original secret!
-//! let secret = sss.recover(shares.as_slice()).unwrap();
+//! let secret = sss.recover(&shares).unwrap();
 //! assert_eq!(secret, vec![1, 2, 3, 4]);
 //! # }
 //! ```
@@ -34,9 +37,12 @@
 //! let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
 //! let dealer = sss.dealer_rng::<ChaCha8Rng>(&[1, 2, 3, 4], &mut rng);
 //! // Get 10 shares
-//! let shares = dealer.take(10).collect::<Vec<Share<POLY>>>();
+//! let shares = dealer
+//!     .take(10)
+//!     .map(Some)
+//!     .collect::<Vec<Option<Share<POLY>>>>();
 //! // Recover the original secret!
-//! let secret = sss.recover(shares.as_slice()).unwrap();
+//! let secret = sss.recover(&shares).unwrap();
 //! assert_eq!(secret, vec![1, 2, 3, 4]);
 //! ```
 //!
@@ -48,6 +54,38 @@
 //! Commonly used polynomials:
 //! - 0x11B — used in AES (Rijndael)
 //! - 0x11D — commonly used in Reed–Solomon (e.g., QR codes)
+//!
+//! # Feature flags and share variants
+//!
+//! This crate exposes compile-time feature flags to select the share representation and
+//! other behavior:
+//!
+//! - `std` — enables `dealer` convenience (uses `rand::thread_rng`). Without `std`, use `dealer_rng`.
+//! - `zeroize_memory` — enables `Zeroize` on share types to clear memory on drop.
+//! - default (no `share_x`) — `Share` stores only `y` values. The `x` coordinate is implicit
+//!   and derived from the iteration order (1-based) when generating or consuming shares.
+//! - `share_x` — `Share` stores both `x` and `y`. The `x` is carried with each share.
+//!
+//! By default, `share_x` is disabled (no-x). To use `share_x`, enable `share_x` explicitly.
+//!
+//! Example (Cargo.toml):
+//!
+//! ```toml
+//! ssskit = { version = "0.1", default-features = false, features = ["std", "zeroize_memory", "share_x"] }
+//! ```
+//!
+//! Serialization format:
+//! - Default (no x-coordinate): `Vec<u8>` representation contains only `y` bytes.
+//! - With `share_x`: `Vec<u8>` representation is `[x, y...]` (first byte is `x`).
+//!
+//! API notes:
+//! - `recover`: pass an iterator of `Option<Share>`; use `Some(share)` for known shares.
+//!   This supports both variants uniformly (with or without `x`).
+//! - `recover_shares`: fill a target of size `n` using `Option` positions (`None` for
+//!   unknowns). Positions map to indices `1..=n`.
+//!
+//! In `share_x`, `x` in each `Share` is used directly. Without x-coordinate, the iterator index
+//! is used as `x` (1-based) during interpolation and resharing.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod field;
@@ -63,6 +101,8 @@ use field::GF256;
 pub use field::PRIMITIVE_POLYS;
 pub use share::Share;
 
+use crate::share::ShareWithX;
+
 /// Tuple struct which implements methods to generate shares and recover secrets over a 256 bits Galois Field.
 /// Its only parameter is the minimum shares threshold.
 ///
@@ -77,7 +117,10 @@ pub use share::Share;
 /// # {
 /// let dealer = sss.dealer(&[1, 2, 3, 4]);
 /// // Get 10 shares
-/// let shares = dealer.take(10).collect::<Vec<Share<POLY>>>();
+/// let shares = dealer
+///     .take(10)
+///     .map(Some)
+///     .collect::<Vec<Option<Share<POLY>>>>();
 /// // Recover the original secret!
 /// let secret = sss.recover(&shares).unwrap();
 /// assert_eq!(secret, vec![1, 2, 3, 4]);
@@ -147,7 +190,11 @@ impl<const POLY: u16> SecretSharing<POLY> {
     /// # const POLY: u16 = 0x11d_u16;
     /// # let sss = SecretSharing::<POLY>(3);
     /// # let mut rng = rand_chacha::ChaCha8Rng::from_seed([0x90; 32]);
-    /// # let mut shares = sss.dealer_rng::<ChaCha8Rng>(&[1], &mut rng).take(3).collect::<Vec<Share<POLY>>>();
+    /// # let mut shares = sss
+    /// #     .dealer_rng::<ChaCha8Rng>(&[1], &mut rng)
+    /// #     .take(3)
+    /// #     .map(Some)
+    /// #     .collect::<Vec<Option<Share<POLY>>>>();
     /// // Recover original secret from shares
     /// let mut secret = sss.recover(&shares);
     /// // Secret correctly recovered
@@ -164,8 +211,9 @@ impl<const POLY: u16> SecretSharing<POLY> {
     {
         let mut share_length: Option<usize> = None;
         let mut keys: HashSet<Vec<u8>> = HashSet::new();
-        let mut values: Vec<(GF256<POLY>, Share<POLY>)> = Vec::new();
+        let mut values: Vec<ShareWithX<POLY>> = Vec::new();
 
+        #[allow(unused_variables)]
         for (i, share) in shares.into_iter().enumerate() {
             if share.is_none() {
                 continue;
@@ -181,7 +229,17 @@ impl<const POLY: u16> SecretSharing<POLY> {
                 return Err("All shares must have the same length");
             } else {
                 keys.insert(Vec::from(share));
-                values.push((GF256(i as u8 + 1), share.clone()));
+                #[cfg(feature = "share_x")]
+                {
+                    values.push(share.clone());
+                }
+                #[cfg(not(feature = "share_x"))]
+                {
+                    values.push(ShareWithX {
+                        x: GF256(i as u8 + 1),
+                        y: share.y.clone(),
+                    });
+                }
             }
         }
 
@@ -192,7 +250,7 @@ impl<const POLY: u16> SecretSharing<POLY> {
         }
     }
 
-    /// Given an iterable collection of shares, recovers the original secret.
+    /// Given an iterable collection of shares (optionally with None for unknown shares), recovers the original shares up to the threshold.
     /// If the number of distinct shares is less than the minimum threshold an `Err` is returned,
     /// otherwise an `Ok` containing the desired number of shares.
     ///
@@ -227,6 +285,7 @@ impl<const POLY: u16> SecretSharing<POLY> {
         let mut values: Vec<(GF256<POLY>, Share<POLY>)> = Vec::new();
 
         let mut count = 0;
+        #[allow(unused_variables)]
         for (i, share) in shares.into_iter().enumerate() {
             if share.is_none() {
                 count += 1;
@@ -243,7 +302,14 @@ impl<const POLY: u16> SecretSharing<POLY> {
                 return Err("All shares must have the same length");
             } else {
                 keys.insert(Vec::from(share));
-                values.push((GF256(i as u8 + 1), share.clone()));
+                #[cfg(feature = "share_x")]
+                {
+                    values.push((share.x.clone(), share.clone()));
+                }
+                #[cfg(not(feature = "share_x"))]
+                {
+                    values.push((GF256(i as u8 + 1), share.clone()));
+                }
                 count += 1;
             }
         }
@@ -276,7 +342,7 @@ mod tests {
     const POLY: u16 = 0x11b_u16;
 
     impl<const POLY: u16> SecretSharing<POLY> {
-        // #[cfg(not(feature = "std"))]
+        #[cfg(not(feature = "std"))]
         fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
             use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 
@@ -284,10 +350,10 @@ mod tests {
             self.dealer_rng(secret, &mut rng)
         }
 
-        // #[cfg(feature = "std")]
-        // fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
-        //     self.dealer(secret)
-        // }
+        #[cfg(feature = "std")]
+        fn make_shares(&self, secret: &[u8]) -> impl Iterator<Item = Share<POLY>> {
+            self.dealer(secret)
+        }
     }
 
     #[test]
@@ -303,10 +369,19 @@ mod tests {
     fn test_duplicate_shares_err() {
         let sss = SecretSharing::<POLY>(255);
         let mut shares: Vec<Share<POLY>> = sss.make_shares(&[1]).take(255).collect();
-        shares[1] = Share {
-            // x: shares[0].x.clone(),
-            y: shares[0].y.clone(),
-        };
+        #[cfg(not(feature = "share_x"))]
+        {
+            shares[1] = Share {
+                y: shares[0].y.clone(),
+            };
+        }
+        #[cfg(feature = "share_x")]
+        {
+            shares[1] = Share {
+                x: shares[0].x.clone(),
+                y: shares[0].y.clone(),
+            };
+        }
         let shares: Vec<Option<Share<POLY>>> = shares.iter().map(|s| Some(s.clone())).collect();
         let secret = sss.recover(&shares);
         assert!(secret.is_err());
@@ -335,7 +410,11 @@ mod tests {
         assert_eq!(recovered_shares.len(), 4);
 
         for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
-            // assert_eq!(recovered_share.x, share.x);
+            #[cfg(feature = "share_x")]
+            {
+                assert_eq!(recovered_share.x, share.x);
+            }
+
             assert_eq!(recovered_share.y, share.y);
         }
 
@@ -348,7 +427,11 @@ mod tests {
         assert_eq!(recovered_shares.len(), 4);
 
         for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
-            // assert_eq!(recovered_share.x, share.x);
+            #[cfg(feature = "share_x")]
+            {
+                assert_eq!(recovered_share.x, share.x);
+            }
+
             assert_eq!(recovered_share.y, share.y);
         }
 
@@ -361,7 +444,11 @@ mod tests {
         assert_eq!(recovered_shares.len(), 4);
 
         for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
-            // assert_eq!(recovered_share.x, share.x);
+            #[cfg(feature = "share_x")]
+            {
+                assert_eq!(recovered_share.x, share.x);
+            }
+
             assert_eq!(recovered_share.y, share.y);
         }
 
@@ -384,8 +471,45 @@ mod tests {
         assert_eq!(recovered_shares.len(), 4);
 
         for (recovered_share, share) in recovered_shares.iter().zip(shares.iter()) {
-            // assert_eq!(recovered_share.x, share.x);
+            #[cfg(feature = "share_x")]
+            {
+                assert_eq!(recovered_share.x, share.x);
+            }
+
             assert_eq!(recovered_share.y, share.y);
+        }
+    }
+
+    #[cfg(feature = "share_x")]
+    #[test]
+    fn test_recover_order_independent_with_x() {
+        let sss = SecretSharing::<POLY>(3);
+        let shares: Vec<Share<POLY>> = sss.make_shares(&[7, 8, 9]).take(5).collect();
+
+        let shuffled: Vec<Share<POLY>> =
+            vec![shares[2].clone(), shares[4].clone(), shares[0].clone()];
+
+        let shares_opt: Vec<Option<Share<POLY>>> = shuffled.into_iter().map(Some).collect();
+        let secret = sss.recover(&shares_opt).unwrap();
+        assert_eq!(secret, vec![7, 8, 9]);
+    }
+
+    #[test]
+    fn test_threshold_one_recover_shares() {
+        let sss = SecretSharing::<POLY>(1);
+        let shares: Vec<Share<POLY>> = sss.make_shares(&[42, 43]).take(1).collect();
+        let recovered = sss
+            .recover_shares([Some(&shares[0]), None, None], 3)
+            .unwrap();
+        assert_eq!(recovered.len(), 3);
+        for r in &recovered {
+            assert_eq!(r.y, shares[0].y);
+        }
+        #[cfg(feature = "share_x")]
+        {
+            for r in &recovered {
+                assert_eq!(r.x, shares[0].x);
+            }
         }
     }
 }

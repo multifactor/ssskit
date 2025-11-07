@@ -25,7 +25,7 @@ fn recover<const POLY: u16>(c: &mut Criterion) {
             sss.recover(black_box(
                 &shares
                     .iter()
-                    .map(|s| Some(s.clone()))
+                    .map(|s: &Share<POLY>| Some(s.clone()))
                     .collect::<Vec<Option<Share<POLY>>>>(),
             ))
         })

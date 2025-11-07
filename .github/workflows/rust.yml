@@ -115,6 +115,9 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
+      - name: Run tests for share_x
+        run: cargo test --verbose --no-default-features --features "std, share_x"
+
   test-nostd:
     name: test
     runs-on: ubuntu-latest
