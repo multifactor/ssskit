@@ -66,6 +66,22 @@ You can run them with `cargo test` and `cargo bench`.
 | ------------ | ------------------------------- | ------------------------------- | ------------------------------- | ------------------------------- | ------------------------------- |
 | Apple M1 Pro | [2.6976 µs 2.7007 µs 2.7039 µs] | [938.79 ps 939.83 ps 941.04 ps] | [190.00 µs 190.46 µs 191.06 µs] | [31.176 ns 31.311 ns 31.529 ns] | [23.196 ns 23.211 ns 23.230 ns] |
 
+# Roadmap
+
+- [Barycentric interpolation](https://epubs.siam.org/doi/10.1137/S0036144502417715)
+- shares serialization/deserialization
+- ssskit-cli 
+- [Verifiable secret sharing](https://www.cs.umd.edu/~gasarch/TOPICS/secretsharing/feldmanVSS.pdf)
+  - Next step: [Publicly verifiable secret sharing](https://crypto.ethz.ch/publications/files/Stadle96.pdf) with commitments over EC prime-field group (Ristretto255)
+- [Robust secret sharing](https://dl.acm.org/doi/pdf/10.1145/195613.195621)
+- [Threshold changeable secret resharing](https://alinush.github.io/2024/04/26/How-to-reshare-a-secret.html)
+  - [Threshold changeable secret sharing with secure secret reconstruction](https://www.sciencedirect.com/science/article/abs/pii/S0020019020300156)
+  - [Resharing Shamir Secret Shares to Change the Threshold](https://conduition.io/cryptography/shamir-resharing)
+- Arbitrary GF(2^k) support
+- Side-channel and constant time primitives. Integrate `subtle`
+- Optional SIMD feature for field operations
+- Better error handling: `thiserror` integration
+
 # Contributing
 
 If you find a vulnerability, bug or would like a new feature, [open a new issue](https://github.com/multifactor/ssskit/issues/new).
